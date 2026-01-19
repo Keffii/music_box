@@ -27,6 +27,9 @@ To register and test the platform without using your personal email, you can use
 - Containerized architecture with Docker for both frontend and backend
 - ESP32 Bluetooth physical controller integration
 
+## Preview
+<img src="https://github.com/user-attachments/assets/9fcbcc33-5b61-4bd5-86a5-4694c5369077" alt="Music Box application preview" width="100%"/>
+
 ## System Architecture
 The Music Box platform follows a microservices architecture deployed on AWS:
 
@@ -72,9 +75,6 @@ Physical hardware controller for wireless music playback control:
 - Seek (+10s skip)
 - Mute functionality
 - Bluetooth Low Energy (BLE) communication
-
-## Application Interface
-<img src="https://github.com/user-attachments/assets/9fcbcc33-5b61-4bd5-86a5-4694c5369077" alt="Music Box application preview" width="100%"/>
 
 ## Monitoring
 The platform includes comprehensive monitoring and analytics powered by Grafana, providing real-time insights into top 5 songs, last commands, command distribution, and song count.
