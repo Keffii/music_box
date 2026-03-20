@@ -89,7 +89,7 @@ The platform includes comprehensive monitoring and analytics powered by Grafana,
 - **Monitoring**: Grafana Cloud
 - **Database**: MySQL (AWS RDS)
 - **IoT**: ESP32 microcontroller with Bluetooth
-- **Containerization**: Docker & Docker Compose
+- **Containerization**: Docker
 
 ## Installation
 ```bash
