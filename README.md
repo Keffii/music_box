@@ -12,7 +12,7 @@
 </p>
 
 ## Website
-[https://develop.d2ma9zjubqxtjv.amplifyapp.com/](https://develop.d2ma9zjubqxtjv.amplifyapp.com/)
+Not available anymore.
 
 ### Testing the Platform
 To register and test the platform without using your personal email, you can use a temporary email service:
