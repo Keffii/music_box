@@ -8,7 +8,7 @@
 </p>
 <h1 align="center">Music Box</h1>
 <p align="center">
-  <strong>A cloud-based music streaming platform</strong>
+  <strong>A cloud-based music streaming service with a physical bluetooth remote for playback and volume control.</strong>
 </p>
 
 ## Website
