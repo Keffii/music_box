@@ -12,11 +12,7 @@
 </p>
 
 ## Website
-Not available anymore.
-
-### Testing the Platform
-To register and test the platform without using your personal email, you can use a temporary email service:
-- [10 Minute Mail](https://10minutemail.com/)
+Not available anymore due to AWS tokens.
 
 ## Features
 - Cloud-based music streaming
