@@ -7,6 +7,7 @@
 typedef struct {
     char title[64];
     char artist[48];
+    char category[24];
     bool playing;
     bool muted;
     bool shuffle;

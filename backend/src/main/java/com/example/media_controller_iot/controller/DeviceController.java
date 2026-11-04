@@ -47,6 +47,7 @@ public class DeviceController {
         Map<String, Object> state = new LinkedHashMap<>();
         state.put("title", full.get("title") != null ? full.get("title") : "");
         state.put("artist", full.get("artist") != null ? full.get("artist") : "");
+        state.put("category", full.get("category") != null ? full.get("category") : "");
         state.put("isPlaying", full.get("isPlaying"));
         state.put("volume", full.get("volume"));
         state.put("isMuted", full.get("isMuted"));

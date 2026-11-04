@@ -39,7 +39,8 @@ class DeviceControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.volume").isNumber())
                 .andExpect(jsonPath("$.seq").isNumber())
-                .andExpect(jsonPath("$.title").isString());
+                .andExpect(jsonPath("$.title").isString())
+                .andExpect(jsonPath("$.category").isString());
     }
 
     @Test

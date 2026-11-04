@@ -53,6 +53,7 @@ int main(int argc, char **argv)
     m.link = UI_LINK_OK;
     snprintf(m.title, sizeof m.title, "Better Day");
     snprintf(m.artist, sizeof m.artist, "penguinmusic");
+    snprintf(m.category, sizeof m.category, "Electronic");
     m.playing = true;
     m.volume = 72;
     scene(dir, "03_playing", &m, 2000, 4000);
@@ -85,6 +86,7 @@ int main(int argc, char **argv)
 
     snprintf(m.title, sizeof m.title, "Lonewolf Dark Trap");
     snprintf(m.artist, sizeof m.artist, "onesevenbeatxs");
+    snprintf(m.category, sizeof m.category, "Hiphop");
     m.knob_at_ms = 0;
     m.shuffle = true;
     m.repeat = true;

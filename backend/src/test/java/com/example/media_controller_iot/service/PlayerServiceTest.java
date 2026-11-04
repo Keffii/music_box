@@ -33,7 +33,7 @@ class PlayerServiceTest {
 
     private void addSongs(int count) {
         for (long i = 1; i <= count; i++) {
-            library.add(Songs.builder().id(i).title("Song " + i).artist("Artist").build());
+            library.add(Songs.builder().id(i).title("Song " + i).artist("Artist").category("Lofi").build());
         }
     }
 
@@ -142,6 +142,12 @@ class PlayerServiceTest {
         assertThat(player.getState().get("isMuted")).isEqualTo(true);
         player.mediaCommands("MUTE", null);
         assertThat(player.getState().get("volume")).isEqualTo(40);
+    }
+
+    @Test
+    void stateIncludesTheCategory() {
+        addSongs(1);
+        assertThat(player.getState().get("category")).isEqualTo("Lofi");
     }
 
     @Test

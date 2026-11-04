@@ -245,6 +245,7 @@ public class PlayerService {
         state.put("currentSongId", currentSong != null ? currentSong.getId() : null);
         state.put("title", currentSong != null ? currentSong.getTitle() : null);
         state.put("artist", currentSong != null ? currentSong.getArtist() : null);
+        state.put("category", currentSong != null ? currentSong.getCategory() : null);
         state.put("srcUrl", currentSong != null ? currentSong.getSrcUrl() : null);
         state.put("coverUrl", currentSong != null ? currentSong.getCoverUrl() : null);
         state.put("volume", volume);

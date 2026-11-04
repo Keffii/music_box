@@ -61,6 +61,7 @@ static void parse(const char *json, api_state_t *out)
     long v;
     json_get_string(json, "title", out->title, sizeof out->title);
     json_get_string(json, "artist", out->artist, sizeof out->artist);
+    json_get_string(json, "category", out->category, sizeof out->category);
     json_get_bool(json, "isPlaying", &out->playing);
     json_get_bool(json, "isMuted", &out->muted);
     json_get_bool(json, "shuffle", &out->shuffle);

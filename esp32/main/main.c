@@ -110,6 +110,7 @@ static void apply_state(const api_state_t *st, bool from_command)
     if (!stale && uxQueueMessagesWaiting(s_commands) == 0) {
         snprintf(s_model.title, sizeof s_model.title, "%s", st->title);
         snprintf(s_model.artist, sizeof s_model.artist, "%s", st->artist);
+        snprintf(s_model.category, sizeof s_model.category, "%s", st->category);
         s_model.playing = st->playing;
         s_model.muted = st->muted;
         s_model.shuffle = st->shuffle;

@@ -1,5 +1,6 @@
 #include "ui.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -147,7 +148,14 @@ static void icon_speaker(gfx_t *g, int cx, int cy, int s, uint16_t c, bool muted
 // ---- pieces of the main screen ----------------------------------------------------------------
 static void draw_header(gfx_t *g, const ui_model_t *m, uint32_t now)
 {
-    gfx_text(g, 2, 2, "MUSIC BOX", 1, C_ACCENT);
+    // The current track's genre, in capitals; "MUSIC BOX" when there is none (e.g. an empty library).
+    // 15 characters fit left of the status icons.
+    char label[16];
+    const char *src = m->title[0] && m->category[0] ? m->category : "Music Box";
+    size_t n = 0;
+    for (; src[n] && n < sizeof label - 1; n++) label[n] = (char)toupper((unsigned char)src[n]);
+    label[n] = '\0';
+    gfx_text(g, 2, 2, label, 1, C_ACCENT);
 
     int x = GFX_W - 2;
     // link indicator: three rising bars

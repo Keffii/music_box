@@ -2,3 +2,4 @@ build/
 sdkconfig
 sdkconfig.old
 # keep WiFi passwords out of git: settings live in sdkconfig (ignored)
+__pycache__/

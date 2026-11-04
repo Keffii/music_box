@@ -26,6 +26,7 @@ typedef struct {
     ui_link_t link;
     char title[64];
     char artist[48];
+    char category[24];       // genre shown in the header, e.g. "Lofi"
     bool playing;
     bool muted;
     bool shuffle;
