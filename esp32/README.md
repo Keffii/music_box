@@ -111,8 +111,9 @@ The commands are `PLAY`, `PAUSE`, `PLAY_PAUSE`, `NEXT`, `PREV`, `MUTE`, `SHUFFLE
 
 ```bash
 cd esp32/tools
-gcc -O2 -I../main render_preview.c ../main/ui.c ../main/gfx.c ../main/fonts_inter.c -o render_preview
+gcc -O2 -I../main render_preview.c ../main/ui.c ../main/gfx.c ../main/fonts_inter.c -o render_preview -lm
 mkdir -p out && ./render_preview out && python ppm_sheet.py out preview.png 3
+./render_preview --check   # every flash icon stays inside its circle and is centred
 ```
 
 ## Fonts

@@ -2,6 +2,7 @@
 #include "fonts_inter.h"
 
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -23,7 +24,7 @@
 #define BARS        16
 #define BAR_W       6
 #define BAR_GAP     2
-#define EQ_TOP      42
+#define EQ_TOP      46
 #define EQ_BOTTOM   79
 #define EQ_MAX      (EQ_BOTTOM - EQ_TOP)
 
@@ -101,45 +102,91 @@ static void draw_equalizer(gfx_t *g, bool dim)
 }
 
 // ---- icons -----------------------------------------------------------------------------------
-static void icon_play(gfx_t *g, int cx, int cy, int s, uint16_t c)
+// Every icon is drawn inside a box of height h centred on (cx, cy), so it can be placed and sized
+// without overlapping anything around it. Widths are given next to each function.
+
+/**
+ * Play triangle, about 0.87h wide. Centring the box makes it look too far left and centring the
+ * centroid too far right, so it sits in between: the box is shifted right by w/12.
+ */
+static void icon_play(gfx_t *g, int cx, int cy, int h, uint16_t c)
 {
-    gfx_fill_triangle(g, cx - s / 2, cy - s, cx - s / 2, cy + s, cx + s, cy, c);
+    int w = (h * 87 + 50) / 100;
+    int half = h / 2;
+    int left = cx - (w * 5 + 6) / 12;
+    gfx_fill_triangle(g, left, cy - half, left, cy + half, left + w, cy, c);
 }
 
-static void icon_pause(gfx_t *g, int cx, int cy, int s, uint16_t c)
+/** Two bars, about 0.9h wide. */
+static void icon_pause(gfx_t *g, int cx, int cy, int h, uint16_t c)
 {
-    int w = s * 2 / 3 > 1 ? s * 2 / 3 : 2;
-    gfx_fill_rect(g, cx - s + 1, cy - s, w, 2 * s + 1, c);
-    gfx_fill_rect(g, cx + s - w, cy - s, w, 2 * s + 1, c);
+    int bw = (h * 32 + 50) / 100, gap = (h * 26 + 50) / 100;
+    if (bw < 2) bw = 2;
+    if (gap < 2) gap = 2;
+    int total = 2 * bw + gap;
+    int left = cx - total / 2, top = cy - h / 2;
+    gfx_fill_rect(g, left, top, bw, h, c);
+    gfx_fill_rect(g, left + bw + gap, top, bw, h, c);
 }
 
-static void icon_next(gfx_t *g, int cx, int cy, int s, uint16_t c, bool reverse)
+/** Skip next (two triangles and an end bar), about 1.1h wide; mirrored for previous. */
+static void icon_skip(gfx_t *g, int cx, int cy, int h, uint16_t c, bool previous)
 {
-    int d = reverse ? -1 : 1;
-    gfx_fill_triangle(g, cx - d * s, cy - s, cx - d * s, cy + s, cx, cy, c);
-    gfx_fill_triangle(g, cx, cy - s, cx, cy + s, cx + d * s, cy, c);
-    int bar_x = reverse ? cx - s - 2 : cx + s;
-    gfx_fill_rect(g, bar_x, cy - s, 3, 2 * s + 1, c);
-}
-
-static void icon_speaker(gfx_t *g, int cx, int cy, int s, uint16_t c, bool muted)
-{
-    gfx_fill_rect(g, cx - s, cy - s / 3, s / 2 + 1, 2 * (s / 3) + 1, c);
-    gfx_fill_triangle(g, cx - s / 2, cy - s / 3, cx + s / 4, cy - s, cx + s / 4, cy + s, c);
-    gfx_fill_triangle(g, cx - s / 2, cy + s / 3, cx - s / 2, cy - s / 3, cx + s / 4, cy + s, c);
-    if (muted) {
-        for (int i = -s / 2; i <= s / 2; i++) {
-            gfx_fill_rect(g, cx + s / 2 + i + s / 4, cy + i, 2, 2, C_BAD);
-            gfx_fill_rect(g, cx + s / 2 + i + s / 4, cy - i, 2, 2, C_BAD);
-        }
+    int t = (h * 48 + 50) / 100;          // width of one triangle
+    int b = h / 7 > 2 ? h / 7 : 2;         // end bar
+    int total = 2 * t + b;
+    int left = cx - total / 2, half = h / 2;
+    if (!previous) {
+        gfx_fill_triangle(g, left, cy - half, left, cy + half, left + t, cy, c);
+        gfx_fill_triangle(g, left + t, cy - half, left + t, cy + half, left + 2 * t, cy, c);
+        gfx_fill_rect(g, left + 2 * t, cy - half, b, 2 * half + 1, c);
     } else {
-        for (int r = s / 2; r <= s; r += s / 3 > 1 ? s / 3 : 2) {
-            for (int dy = -r; dy <= r; dy++) {
-                for (int dx = 0; dx <= r; dx++) {
-                    int d = dx * dx + dy * dy;
-                    if (d <= r * r && d > (r - 1) * (r - 1) && dx * 2 > (dy < 0 ? -dy : dy)) {
-                        gfx_pixel(g, cx + s / 4 + 2 + dx, cy + dy, c);
-                    }
+        gfx_fill_rect(g, left, cy - half, b, 2 * half + 1, c);
+        gfx_fill_triangle(g, left + b + t, cy - half, left + b + t, cy + half, left + b, cy, c);
+        gfx_fill_triangle(g, left + b + 2 * t, cy - half, left + b + 2 * t, cy + half, left + b + t, cy, c);
+    }
+}
+
+typedef enum { SPEAKER_WAVES, SPEAKER_MUTED, SPEAKER_PLAIN } speaker_t;
+
+/** Speaker with sound waves or a red X to its right, about 1.15h wide in total, never overlapping. */
+static void icon_speaker(gfx_t *g, int cx, int cy, int h, uint16_t c, speaker_t mode)
+{
+    int body_w = (h * 22 + 50) / 100, body_h = (h * 40 + 50) / 100;
+    int cone_w = (h * 30 + 50) / 100;
+    int gap = h / 6 > 2 ? h / 6 : 2;
+    int side = mode == SPEAKER_PLAIN ? 0 : (h * 46 + 50) / 100; // the waves or the X
+    int total = body_w + cone_w + (side ? gap + side : 0);
+    int left = cx - total / 2, half = h / 2;
+
+    // body and cone
+    gfx_fill_rect(g, left, cy - body_h / 2, body_w, body_h | 1, c);
+    int cl = left + body_w, cr = cl + cone_w;
+    gfx_fill_triangle(g, cl, cy - body_h / 2, cr, cy - half, cr, cy + half, c);
+    gfx_fill_triangle(g, cl, cy - body_h / 2, cl, cy + body_h / 2, cr, cy + half, c);
+    gfx_fill_rect(g, cr - 1, cy - half, 1, 2 * half + 1, c);
+
+    int sx = cr + gap; // left edge of the side part
+    if (mode == SPEAKER_MUTED) {
+        // an X, two pixels thick, in a side x side square
+        int r = side / 2;
+        int mx = sx + r;
+        for (int i = -r; i <= r - 1; i++) {
+            gfx_fill_rect(g, mx + i, cy + i, 2, 2, C_BAD);
+            gfx_fill_rect(g, mx + i, cy - i - 1, 2, 2, C_BAD);
+        }
+    } else if (mode == SPEAKER_WAVES) {
+        // two arcs centred on the cone's mouth, about 80 degrees wide; the outer one ends at the
+        // right edge of the side part. Pixels count when their centre is within 1.3 px of the arc.
+        int radii[2] = {gap + side / 2 - 1, gap + side - 1};
+        for (int k = 0; k < 2; k++) {
+            float r = (float)radii[k];
+            for (int dy = -radii[k]; dy <= radii[k]; dy++) {
+                for (int dx = 1; dx <= radii[k]; dx++) {
+                    float d = sqrtf((float)(dx * dx + dy * dy));
+                    if (d > r + 0.5f || d < r - 0.8f) continue;
+                    if ((dy < 0 ? -dy : dy) * 10 > dx * 9) continue;
+                    gfx_pixel(g, cr + dx, cy + dy, c);
                 }
             }
         }
@@ -192,7 +239,7 @@ static void draw_title(gfx_t *g, const ui_model_t *m, uint32_t now)
     const char *title = m->title[0] ? m->title : "No songs yet";
     const char *artist = m->title[0] ? m->artist : "Add tracks to music/";
     int w = gfx_text_width(F_TITLE, title, 0);
-    int y = 29; // baseline
+    int y = 28; // baseline
     if (w <= GFX_W - 6) {
         text(g, F_TITLE, GFX_W / 2, y, title, C_TEXT, GFX_CENTER, 0);
     } else {
@@ -208,14 +255,14 @@ static void draw_title(gfx_t *g, const ui_model_t *m, uint32_t now)
     }
     char line[48];
     gfx_text_fit(F_BODY, artist, 0, GFX_W - 8, line, sizeof line);
-    text(g, F_BODY, GFX_W / 2, 40, line, C_MUTED, GFX_CENTER, 0);
+    text(g, F_BODY, GFX_W / 2, 42, line, C_MUTED, GFX_CENTER, 0);
 }
 
 static void draw_footer(gfx_t *g, const ui_model_t *m)
 {
     int y = 86;
-    if (m->playing) icon_play(g, 6, y + 4, 4, C_TEXT);
-    else icon_pause(g, 6, y + 4, 4, C_TEXT);
+    if (m->playing) icon_play(g, 7, y + 4, 9, C_TEXT);
+    else icon_pause(g, 7, y + 4, 9, C_TEXT);
 
     // number (or MUTE) on the right; the bar takes the space that is left
     char vol[8];
@@ -245,10 +292,12 @@ static void draw_flash(gfx_t *g, const ui_model_t *m, uint32_t age)
     int cx = GFX_W / 2, cy = 44;
     float p = (float)age / 140.0f;
     if (p > 1.0f) p = 1.0f;
-    float pop = p < 1.0f ? p * 1.25f : 1.0f; // slight overshoot then settle
-    if (age > 140 && age < 220) pop = 1.25f - (float)(age - 140) / 80.0f * 0.25f;
-    int s = (int)(12 * pop);
-    if (s < 2) s = 2;
+    // pop in with a slight overshoot, then settle. At the largest (1.12 x 18 px) every icon still
+    // stays at least 2 px inside the circle.
+    float pop = p < 1.0f ? p * 1.12f : 1.0f;
+    if (age > 140 && age < 220) pop = 1.12f - (float)(age - 140) / 80.0f * 0.12f;
+    int s = ((int)(18 * pop)) | 1; // odd, so the icon has a centre row
+    if (s < 3) s = 3;
 
     int ring = 18 + (int)(age / 18);
     uint8_t ring_v = age < 400 ? (uint8_t)(255 - age * 255 / 400) : 0;
@@ -257,12 +306,12 @@ static void draw_flash(gfx_t *g, const ui_model_t *m, uint32_t age)
 
     const char *label = "";
     switch (m->flash) {
-    case UI_FLASH_PLAY:   icon_play(g, cx + 2, cy, s, C_TEXT); label = "PLAY"; break;
+    case UI_FLASH_PLAY:   icon_play(g, cx, cy, s, C_TEXT); label = "PLAY"; break;
     case UI_FLASH_PAUSE:  icon_pause(g, cx, cy, s, C_TEXT); label = "PAUSE"; break;
-    case UI_FLASH_NEXT:   icon_next(g, cx - 1, cy, s * 2 / 3, C_TEXT, false); label = "NEXT"; break;
-    case UI_FLASH_PREV:   icon_next(g, cx + 1, cy, s * 2 / 3, C_TEXT, true); label = "PREVIOUS"; break;
-    case UI_FLASH_MUTE:   icon_speaker(g, cx - 3, cy, s, C_TEXT, true); label = "MUTED"; break;
-    case UI_FLASH_UNMUTE: icon_speaker(g, cx - 4, cy, s, C_TEXT, false); label = "SOUND ON"; break;
+    case UI_FLASH_NEXT:   icon_skip(g, cx, cy, s, C_TEXT, false); label = "NEXT"; break;
+    case UI_FLASH_PREV:   icon_skip(g, cx, cy, s, C_TEXT, true); label = "PREVIOUS"; break;
+    case UI_FLASH_MUTE:   icon_speaker(g, cx, cy, s, C_TEXT, SPEAKER_MUTED); label = "MUTED"; break;
+    case UI_FLASH_UNMUTE: icon_speaker(g, cx, cy, s, C_TEXT, SPEAKER_WAVES); label = "SOUND ON"; break;
     case UI_FLASH_SEEK:
         text(g, F_TITLE, cx, cy + 6, "+10", C_TEXT, GFX_CENTER, 0);
         label = "SECONDS";
@@ -280,7 +329,7 @@ static void draw_knob_overlay(gfx_t *g, const ui_model_t *m, uint32_t age)
     gfx_round_rect(g, x, y, w, h, 6, C_ACCENT2);
     char num[8];
     snprintf(num, sizeof num, "%d", m->volume);
-    icon_speaker(g, x + 16, y + 14, 7, C_TEXT, m->volume == 0);
+    icon_speaker(g, x + 19, y + 15, 15, C_TEXT, m->volume == 0 ? SPEAKER_MUTED : SPEAKER_WAVES);
     text(g, F_BIG, x + 62, y + 25, num, C_TEXT, GFX_CENTER, 0);
     int bx = x + 8, bw = w - 16, by = y + h - 7;
     gfx_fill_rect(g, bx, by, bw, 3, C_BG);
@@ -300,7 +349,7 @@ static void draw_offline(gfx_t *g, const ui_model_t *m, uint32_t now)
 
     // pulsing ring
     int phase = (int)(now % 1400);
-    int r = 8 + phase / 100;
+    int r = 8 + phase / 150; // at most 17, so it never reaches the headline
     uint8_t v = (uint8_t)(255 - phase * 255 / 1400);
     gfx_circle(g, GFX_W / 2, 24, r, gfx_mix(C_BG, wifi ? C_WARN : C_BAD, v));
     gfx_fill_circle(g, GFX_W / 2, 24, 6, wifi ? C_WARN : C_BAD);

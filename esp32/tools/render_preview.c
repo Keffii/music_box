@@ -1,7 +1,8 @@
 // Renders UI frames on a PC so the screen design can be checked without hardware.
 //
-//   gcc -O2 -I../main render_preview.c ../main/ui.c ../main/gfx.c ../main/fonts_inter.c -o render_preview
-//   ./render_preview out_dir
+//   gcc -O2 -I../main render_preview.c ../main/ui.c ../main/gfx.c ../main/fonts_inter.c -o render_preview -lm
+//   ./render_preview out_dir        renders every scene
+//   ./render_preview --check        checks that flash icons stay inside their circle
 //
 // Writes one binary PPM (P6) per scene. The colours match what the SSD1351 shows.
 
@@ -38,8 +39,69 @@ static void scene(const char *dir, const char *name, ui_model_t *m, uint32_t fro
     save(dir, name);
 }
 
+/**
+ * Checks each flash icon over its whole animation: no white pixel may lie outside the 17 px circle
+ * (that would be the icon poking out), and once settled the icon's ink should be centred.
+ * Returns the number of problems found.
+ */
+static int check_flash_icons(void)
+{
+    static const char *names[] = {"", "play", "pause", "next", "prev", "mute", "unmute", "seek"};
+    const uint16_t white = gfx_rgb(255, 255, 255), red = gfx_rgb(255, 70, 80); // C_TEXT, C_BAD
+    const int cx = GFX_W / 2, cy = 44, r = 17;
+    int problems = 0;
+    ui_model_t m;
+    memset(&m, 0, sizeof m);
+    m.link = UI_LINK_OK;
+    m.volume = 50;
+    snprintf(m.title, sizeof m.title, "Better Day");
+    snprintf(m.artist, sizeof m.artist, "penguinmusic");
+
+    for (int f = UI_FLASH_PLAY; f <= UI_FLASH_SEEK; f++) {
+        m.flash = (ui_flash_t)f;
+        m.flash_at_ms = 100000;
+        int worst = 0;
+        for (uint32_t age = 20; age < 500; age += 10) {
+            ui_render(&g, &m, m.flash_at_ms + age);
+            int minx = GFX_W, maxx = -1, miny = GFX_H, maxy = -1;
+            for (int y = 0; y < 66; y++) {
+                for (int x = 0; x < GFX_W; x++) {
+                    uint16_t px = gfx_get(&g, x, y);
+                    if (px != white && px != red) continue;
+                    int dx = x - cx, dy = y - cy, d2 = dx * dx + dy * dy;
+                    if (d2 > r * r) continue; // dimmed text behind is never pure white after 20 ms
+                    if (d2 > worst) worst = d2;
+                    if (x < minx) minx = x;
+                    if (x > maxx) maxx = x;
+                    if (y < miny) miny = y;
+                    if (y > maxy) maxy = y;
+                    if (d2 > (r - 2) * (r - 2)) {
+                        printf("  %s: icon pixel at the circle's edge (%d,%d), age %u ms\n", names[f], x, y, (unsigned)age);
+                        problems++;
+                        goto next_age;
+                    }
+                }
+            }
+            if (age == 300 && maxx >= 0) {
+                // ink box centre vs circle centre, in half pixels (play is checked on its centroid instead)
+                int ox = (minx + maxx) - 2 * cx, oy = (miny + maxy) - 2 * cy;
+                printf("%-7s settled ink box %dx%d, offset from centre x %+.1f y %+.1f px\n", names[f],
+                       maxx - minx + 1, maxy - miny + 1, ox / 2.0, oy / 2.0);
+            }
+        next_age:;
+        }
+    }
+    return problems;
+}
+
 int main(int argc, char **argv)
 {
+    if (argc > 1 && strcmp(argv[1], "--check") == 0) {
+        int problems = check_flash_icons();
+        printf(problems ? "%d problem(s)\n" : "all flash icons stay inside their circle\n", problems);
+        return problems ? 1 : 0;
+    }
+
     const char *dir = argc > 1 ? argv[1] : ".";
     ui_model_t m;
     memset(&m, 0, sizeof m);
