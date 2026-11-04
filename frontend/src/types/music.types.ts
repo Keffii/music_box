@@ -8,15 +8,16 @@ export interface Song {
 }
 
 export interface ServerState {
-  title: string;
-  artist: string;
+  title: string | null;
+  artist: string | null;
   shuffle: boolean;
   repeat: boolean;
   volume: number;
   isMuted: boolean;
-  currentSongId: number;
+  currentSongId: number | null;
   isPlaying: boolean;
   lastCommand?: string;
+  seq: number;
 }
 
 export interface PlayerState {

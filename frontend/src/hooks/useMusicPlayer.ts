@@ -22,6 +22,9 @@ export const useMusicPlayer = () => {
   const userIsAdjustingVolume = useRef<boolean>(false);
   const volumeUpdateTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSongIdRef = useRef<number | null>(null);
+  // Highest command sequence number already applied. SSE replays the full state on
+  // every reconnect, so one-shot commands such as SEEK_FORWARD are keyed on seq.
+  const lastSeqRef = useRef<number | null>(null);
 
   // Load songs
   const loadSongs = useCallback(async () => {
@@ -58,8 +61,11 @@ export const useMusicPlayer = () => {
   const updateStateFromServer = useCallback((data: ServerState) => {
     console.log('Server state update:', data);
     
-    setSongTitle(data.title);
-    setSongArtist(data.artist);
+    const isNewCommand = lastSeqRef.current !== null && data.seq !== lastSeqRef.current;
+    lastSeqRef.current = data.seq;
+
+    setSongTitle(data.title ?? 'No songs yet');
+    setSongArtist(data.artist ?? 'Add tracks to the music folder');
     setShuffleEnabled(data.shuffle);
     setRepeatEnabled(data.repeat);
     
@@ -130,12 +136,12 @@ export const useMusicPlayer = () => {
       audioRef.current?.pause();
     }
 
-    // Handle seek forward from ESP32 controller
-    if (data.lastCommand === 'SEEK_FORWARD' && audioRef.current) {
-      audioRef.current.currentTime = Math.min(
-        audioRef.current.currentTime + 10,
-        audioRef.current.duration
-      );
+    // Seek forward (from the remote) only for a new command, never for a replayed state
+    if (isNewCommand && data.lastCommand === 'SEEK_FORWARD' && audioRef.current) {
+      const audio = audioRef.current;
+      if (Number.isFinite(audio.duration)) {
+        audio.currentTime = Math.min(audio.currentTime + 10, audio.duration);
+      }
     }
   }, [safePlay]);
 

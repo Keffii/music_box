@@ -6,35 +6,48 @@ import com.example.media_controller_iot.models.VolumeLog;
 import com.example.media_controller_iot.repository.PlayerCommandLogRepo;
 import com.example.media_controller_iot.repository.SongsRepo;
 import com.example.media_controller_iot.repository.VolumeLogRepo;
-import org.springframework.lang.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Holds the shared player state. The web UI and the ESP32 remote both send
+ * commands here, and every change is broadcast to SSE subscribers.
+ */
 @Service
 public class PlayerService {
+
+    private static final Logger log = LoggerFactory.getLogger(PlayerService.class);
+
+    public static final Set<String> COMMANDS = Set.of(
+            "PLAY", "PAUSE", "PLAY_PAUSE", "NEXT", "PREV", "MUTE",
+            "SHUFFLE", "REPEAT", "SEEK_FORWARD");
 
     private final SongsRepo songsRepo;
     private final PlayerCommandLogRepo playerCommandLogRepo;
     private final VolumeLogRepo volumeLogRepo;
 
-    private boolean shuffleEnabled = false;
-    private boolean repeatEnabled = false;
-    private double playbackPosition = 0;
+    private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
 
-    private final List<SseEmitter> emitters = new ArrayList<>();
-
-    // Playlist queue management
     private List<Long> playlistQueue = new ArrayList<>();
     private int currentQueueIndex = -1;
 
+    private boolean shuffleEnabled = false;
+    private boolean repeatEnabled = false;
     private boolean isPlaying = false;
     private boolean isMuted = false;
-    private int previousVolume = 50;
     private boolean wasPlayingBeforeMute = false;
     private int volume = 50;
+    private int previousVolume = 50;
     private String lastCommand = "NONE";
+    /** Increases on every command, so clients can tell a new command from a replayed state. */
+    private long seq = 0;
 
     private Songs currentSong;
 
@@ -44,14 +57,20 @@ public class PlayerService {
         this.songsRepo = songsRepo;
         this.playerCommandLogRepo = playerCommandLogRepo;
         this.volumeLogRepo = volumeLogRepo;
-        loadInitialSong();
     }
 
-    private void loadInitialSong() {
-        List<Songs> songs = songsRepo.findAll();
-        if (!songs.isEmpty()) {
-            currentSong = songs.get(0);
+    public static boolean isValidCommand(String cmd) {
+        if (cmd == null) return false;
+        if (COMMANDS.contains(cmd)) return true;
+        if (cmd.startsWith("VOLUME:")) {
+            try {
+                Integer.parseInt(cmd.substring("VOLUME:".length()));
+                return true;
+            } catch (NumberFormatException e) {
+                return false;
+            }
         }
+        return false;
     }
 
     public void addEmitter(SseEmitter emitter) { emitters.add(emitter); }
@@ -59,89 +78,74 @@ public class PlayerService {
 
     private void broadcastState() {
         Map<String, Object> state = getState();
-        emitters.removeIf(emitter -> {
+        for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(state);
-                return false;
             } catch (Exception e) {
-                return true;
+                emitters.remove(emitter);
             }
-        });
+        }
+    }
+
+    private List<Songs> allSongs() {
+        return songsRepo.findAll(Sort.by("id"));
+    }
+
+    private int indexOfCurrent(List<Songs> songs) {
+        if (currentSong == null) return -1;
+        for (int i = 0; i < songs.size(); i++) {
+            if (Objects.equals(songs.get(i).getId(), currentSong.getId())) return i;
+        }
+        return -1;
+    }
+
+    /** Picks a random index other than {@code current}, or {@code current} when there is only one. */
+    static int randomOtherIndex(int size, int current) {
+        if (size <= 1) return 0;
+        if (current < 0 || current >= size) return ThreadLocalRandom.current().nextInt(size);
+        int pick = ThreadLocalRandom.current().nextInt(size - 1);
+        return pick >= current ? pick + 1 : pick;
     }
 
     private void nextSong() {
-        // If playlist queue is active, navigate within queue
+        if (repeatEnabled) return; // repeat restarts the same song
+
         if (!playlistQueue.isEmpty() && currentQueueIndex >= 0) {
-            if (repeatEnabled) {
-                // Stay on same song
-                playbackPosition = 0;
-                return;
-            }
-            
-            if (shuffleEnabled) {
-                Random r = new Random();
-                int newIndex;
-                do {
-                    newIndex = r.nextInt(playlistQueue.size());
-                } while (newIndex == currentQueueIndex && playlistQueue.size() > 1);
-                currentQueueIndex = newIndex;
-            } else {
-                currentQueueIndex = (currentQueueIndex + 1) % playlistQueue.size();
-            }
-            
-            Long songId = playlistQueue.get(currentQueueIndex);
-            songsRepo.findById(Objects.requireNonNull(songId)).ifPresent(song -> currentSong = song);
-            playbackPosition = 0;
+            currentQueueIndex = shuffleEnabled
+                    ? randomOtherIndex(playlistQueue.size(), currentQueueIndex)
+                    : (currentQueueIndex + 1) % playlistQueue.size();
+            loadQueueSong();
             return;
         }
 
-        // Default behavior: use all songs
-        List<Songs> songs = songsRepo.findAll();
+        List<Songs> songs = allSongs();
         if (songs.isEmpty()) return;
-
-        // If repeat is enabled (and not shuffling), just restart the current song
-        if (repeatEnabled && !shuffleEnabled) {
-            playbackPosition = 0;
-            return;
-        }
-
-        if (shuffleEnabled) {
-            Random r = new Random();
-            Songs newSong;
-            do {
-                newSong = songs.get(r.nextInt(songs.size()));
-            } while (newSong.equals(currentSong));
-            currentSong = newSong;
-        } else {
-            int idx = songs.indexOf(currentSong);
-            currentSong = songs.get((idx + 1) % songs.size());
-        }
-
-        playbackPosition = 0;
+        int idx = indexOfCurrent(songs);
+        int next = shuffleEnabled ? randomOtherIndex(songs.size(), idx) : (idx + 1) % songs.size();
+        currentSong = songs.get(next);
     }
 
     private void prevSong() {
-        // If playlist queue is active, navigate within queue
         if (!playlistQueue.isEmpty() && currentQueueIndex >= 0) {
             currentQueueIndex = (currentQueueIndex - 1 + playlistQueue.size()) % playlistQueue.size();
-            Long songId = playlistQueue.get(currentQueueIndex);
-            songsRepo.findById(Objects.requireNonNull(songId)).ifPresent(song -> currentSong = song);
-            playbackPosition = 0;
+            loadQueueSong();
             return;
         }
 
-        // Default behavior: use all songs
-        List<Songs> songs = songsRepo.findAll();
+        List<Songs> songs = allSongs();
         if (songs.isEmpty()) return;
+        int idx = indexOfCurrent(songs);
+        currentSong = songs.get(idx <= 0 ? songs.size() - 1 : idx - 1);
+    }
 
-        int index = songs.indexOf(currentSong);
-        currentSong = songs.get((index - 1 + songs.size()) % songs.size());
-        playbackPosition = 0;
+    private void loadQueueSong() {
+        Long songId = playlistQueue.get(currentQueueIndex);
+        if (songId != null) songsRepo.findById(songId).ifPresent(song -> currentSong = song);
     }
 
     private void toggleMute() {
         if (!isMuted) {
-            previousVolume = volume;
+            previousVolume = volume > 0 ? volume : previousVolume;
             volume = 0;
             isMuted = true;
             wasPlayingBeforeMute = isPlaying;
@@ -155,12 +159,12 @@ public class PlayerService {
 
     private void handleVolume(String cmd) {
         try {
-            int newVolume = Integer.parseInt(cmd.split(":")[1]);
+            int newVolume = Integer.parseInt(cmd.substring("VOLUME:".length()));
             volume = Math.max(0, Math.min(newVolume, 100));
             isMuted = (volume == 0);
             volumeLogRepo.save(new VolumeLog(volume));
-        } catch (Exception e) {
-            System.err.println("Invalid VOLUME command: " + cmd);
+        } catch (NumberFormatException e) {
+            log.warn("Invalid VOLUME command: {}", cmd);
         }
     }
 
@@ -168,67 +172,87 @@ public class PlayerService {
         mediaCommands(cmd, null);
     }
 
-    public void mediaCommands(String cmd, String userId) {
+    /**
+     * Applies a command and broadcasts the new state.
+     *
+     * @return false when the command is unknown (nothing changes)
+     */
+    public synchronized boolean mediaCommands(String cmd, String userId) {
+        if (!isValidCommand(cmd)) {
+            log.warn("Ignoring unknown command: {}", cmd);
+            return false;
+        }
+        if (currentSong == null) loadInitialSong();
+
         switch (cmd) {
-            case "PLAY" -> isPlaying = true;
+            case "PLAY" -> isPlaying = currentSong != null;
             case "PAUSE" -> isPlaying = false;
+            case "PLAY_PAUSE" -> isPlaying = !isPlaying && currentSong != null;
             case "NEXT" -> nextSong();
             case "PREV" -> prevSong();
             case "MUTE" -> toggleMute();
-            case "PLAY_PAUSE" -> isPlaying = !isPlaying;
             case "SHUFFLE" -> shuffleEnabled = !shuffleEnabled;
             case "REPEAT" -> repeatEnabled = !repeatEnabled;
-            case "SEEK_FORWARD" -> playbackPosition += 10;
-            default -> {
-                if (cmd.startsWith("VOLUME:")) handleVolume(cmd);
-            }
+            case "SEEK_FORWARD" -> { /* applied once by the web player, keyed on seq */ }
+            default -> handleVolume(cmd);
         }
 
         lastCommand = cmd;
+        seq++;
         playerCommandLogRepo.save(new PlayerCommandLog(cmd, currentSong, userId));
         broadcastState();
+        return true;
     }
 
-    public void setPlaylistQueue(List<Long> songIds, String userId) {
+    public synchronized void setPlaylistQueue(List<Long> songIds, String userId) {
         if (songIds == null || songIds.isEmpty()) {
-            // Clear playlist queue
             playlistQueue.clear();
             currentQueueIndex = -1;
         } else {
             playlistQueue = new ArrayList<>(songIds);
             currentQueueIndex = 0;
-            // Load first song from queue
             Long firstSongId = playlistQueue.get(0);
-            songsRepo.findById(Objects.requireNonNull(firstSongId)).ifPresent(song -> {
-                currentSong = song;
-                isPlaying = true;
-                // Log the command so it appears in recently played
-                lastCommand = "PLAY";
-                playerCommandLogRepo.save(new PlayerCommandLog("PLAY", song, userId));
-            });
-            playbackPosition = 0;
+            if (firstSongId != null) {
+                songsRepo.findById(firstSongId).ifPresent(song -> {
+                    currentSong = song;
+                    isPlaying = true;
+                    lastCommand = "PLAY";
+                    seq++;
+                    playerCommandLogRepo.save(new PlayerCommandLog("PLAY", song, userId));
+                });
+            }
         }
         broadcastState();
     }
 
-    @SuppressWarnings("null")
-    public @NonNull Map<String, Object> getState() {
+    /** Re-reads the library, e.g. after songs were imported or uploaded. */
+    public synchronized void refreshLibrary() {
+        if (currentSong == null) loadInitialSong();
+        broadcastState();
+    }
+
+    private void loadInitialSong() {
+        List<Songs> songs = allSongs();
+        currentSong = songs.isEmpty() ? null : songs.get(0);
+    }
+
+    /** The current state. Song fields are null when the library is empty. */
+    public synchronized Map<String, Object> getState() {
         if (currentSong == null) loadInitialSong();
 
-        return Map.ofEntries(
-                Map.entry("isPlaying", isPlaying),
-                Map.entry("currentSongId", currentSong.getId()),
-                Map.entry("title", currentSong.getTitle()),
-                Map.entry("artist", currentSong.getArtist()),
-                Map.entry("srcUrl", currentSong.getSrcUrl()),
-                Map.entry("coverUrl", currentSong.getCoverUrl()),
-                Map.entry("volume", volume),
-                Map.entry("isMuted", isMuted),
-                Map.entry("lastCommand", lastCommand),
-                Map.entry("shuffle", shuffleEnabled),
-                Map.entry("repeat", repeatEnabled),
-                Map.entry("position", playbackPosition),
-                Map.entry("duration", 0)
-        );
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("isPlaying", isPlaying);
+        state.put("currentSongId", currentSong != null ? currentSong.getId() : null);
+        state.put("title", currentSong != null ? currentSong.getTitle() : null);
+        state.put("artist", currentSong != null ? currentSong.getArtist() : null);
+        state.put("srcUrl", currentSong != null ? currentSong.getSrcUrl() : null);
+        state.put("coverUrl", currentSong != null ? currentSong.getCoverUrl() : null);
+        state.put("volume", volume);
+        state.put("isMuted", isMuted);
+        state.put("lastCommand", lastCommand);
+        state.put("seq", seq);
+        state.put("shuffle", shuffleEnabled);
+        state.put("repeat", repeatEnabled);
+        return state;
     }
 }

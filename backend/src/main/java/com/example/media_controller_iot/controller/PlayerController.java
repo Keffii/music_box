@@ -1,7 +1,7 @@
 package com.example.media_controller_iot.controller;
 
 import com.example.media_controller_iot.service.PlayerService;
-import org.springframework.lang.NonNull;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +21,12 @@ public class PlayerController {
     }
 
     @PostMapping("/command")
-    public void playCommand(@RequestBody Map<String, String> body, Authentication authentication) {
+    public ResponseEntity<Void> playCommand(@RequestBody Map<String, String> body, Authentication authentication) {
         String command = body.get("command");
         String userId = getCurrentUserId(authentication);
-        playerService.mediaCommands(command, userId);
+        return playerService.mediaCommands(command, userId)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.badRequest().build();
     }
 
     private String getCurrentUserId(Authentication authentication) {
@@ -35,13 +37,13 @@ public class PlayerController {
     }
 
     @GetMapping("/state")
-    public @NonNull Map<String, Object> getState() {
+    public Map<String, Object> getState() {
         return playerService.getState();
     }
 
     @GetMapping("/stream")
     public SseEmitter stream() {
-        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        SseEmitter emitter = new SseEmitter(0L); // no timeout
         playerService.addEmitter(emitter);
 
         try {
@@ -51,6 +53,7 @@ public class PlayerController {
 
         emitter.onCompletion(() -> playerService.removeEmitter(emitter));
         emitter.onTimeout(() -> playerService.removeEmitter(emitter));
+        emitter.onError(e -> playerService.removeEmitter(emitter));
 
         return emitter;
     }

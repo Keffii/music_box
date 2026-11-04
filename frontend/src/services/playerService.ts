@@ -33,8 +33,9 @@ export const loadSongs = async () => {
   try {
     const headers = await getHeaders();
     const res = await fetch(`${API_BASE}/api/player/songs`, { headers });
+    if (!res.ok) return [];
     const data = await res.json();
-    return data;
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Failed to load songs:', error);
     return [];
