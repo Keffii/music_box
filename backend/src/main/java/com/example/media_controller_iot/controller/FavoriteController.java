@@ -28,7 +28,7 @@ public class FavoriteController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
-            // Use 'sub' claim (Cognito user ID) as user identifier
+            // The token's 'sub' claim is the user id
             return jwt.getSubject();
         }
         throw new RuntimeException("User not authenticated");
