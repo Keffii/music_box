@@ -1,0 +1,84 @@
+menu "Music Box remote"
+
+    menu "Network"
+        config MUSICBOX_WIFI_SSID
+            string "WiFi SSID"
+            default "my-wifi"
+            help
+                Name of the 2.4 GHz WiFi network (the ESP32 has no 5 GHz radio).
+
+        config MUSICBOX_WIFI_PASSWORD
+            string "WiFi password"
+            default "my-password"
+
+        config MUSICBOX_SERVER_URL
+            string "Music Box URL"
+            default "http://192.168.1.100:8080"
+            help
+                Base URL of the web player, as seen from the ESP32: the LAN IP of the computer
+                running docker compose plus WEB_PORT (default 8080). No trailing slash.
+
+        config MUSICBOX_DEVICE_KEY
+            string "Device key"
+            default "musicbox-demo-key"
+            help
+                Sent in the X-Device-Key header. It must match DEVICE_KEY on the backend.
+
+        config MUSICBOX_POLL_MS
+            int "Now-playing poll interval (ms)"
+            range 200 5000
+            default 500
+    endmenu
+
+    menu "Buttons and knob"
+        config MUSICBOX_PIN_PLAY_PAUSE
+            int "Play/Pause button GPIO"
+            default 26
+        config MUSICBOX_PIN_NEXT
+            int "Next button GPIO"
+            default 25
+        config MUSICBOX_PIN_PREV
+            int "Previous button GPIO"
+            default 33
+        config MUSICBOX_PIN_MUTE
+            int "Mute button GPIO"
+            default 32
+        config MUSICBOX_PIN_SEEK
+            int "Seek +10 s button GPIO"
+            default 27
+        config MUSICBOX_PIN_KNOB
+            int "Volume potentiometer GPIO (ADC1 pin: 32-39)"
+            default 34
+        config MUSICBOX_KNOB_INVERT
+            bool "Invert knob direction"
+            default n
+            help
+                Turn on if turning the knob clockwise lowers the volume.
+    endmenu
+
+    menu "OLED (SSD1351, 128x96)"
+        config MUSICBOX_PIN_OLED_CLK
+            int "CLK GPIO"
+            default 18
+        config MUSICBOX_PIN_OLED_DIN
+            int "DIN (MOSI) GPIO"
+            default 23
+        config MUSICBOX_PIN_OLED_CS
+            int "CS GPIO"
+            default 5
+        config MUSICBOX_PIN_OLED_DC
+            int "DC GPIO"
+            default 16
+        config MUSICBOX_PIN_OLED_RST
+            int "RES GPIO"
+            default 17
+        config MUSICBOX_OLED_SPI_MHZ
+            int "SPI clock (MHz)"
+            range 1 20
+            default 16
+        config MUSICBOX_OLED_ROTATE_180
+            bool "Rotate the display 180 degrees"
+            default n
+    endmenu
+
+endmenu
