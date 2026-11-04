@@ -156,7 +156,7 @@
 .player-time:last-child {
   text-align: left;
 }
-/* Right Section - Volume & Grafana */
+/* Right Section - Volume */
 .player-right {
   display: flex;
   align-items: center;
@@ -191,31 +191,6 @@
   color: var(--foreground);
 }
 
-.grafana-link {
-  color: var(--muted-foreground);
-  transition: color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  text-decoration: none;
-}
-
-.grafana-link:hover {
-  color: var(--primary);
-}
-
-.grafana-icon {
-  width: 40px;
-  height: 40px;
-  transition: transform 0.3s ease;
-}
-
-.grafana-link:hover .grafana-icon {
-  transform: scale(1.2);
-}
 
 /* Hidden audio element */
 audio {

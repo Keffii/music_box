@@ -20,13 +20,12 @@ RUN addgroup -g 1001 appuser && adduser -D -u 1001 -G appuser appuser
 # Copy JAR from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Change ownership
-RUN chown -R appuser:appuser /app
+# Music folder (bind-mounted by docker compose)
+RUN mkdir -p /music && chown -R appuser:appuser /app /music
 
 # Switch to non-root user
 USER appuser
 
 EXPOSE 8080
 
-# Environment variables will be set at runtime (Lightsail/deployment)
 ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "/app/app.jar"]

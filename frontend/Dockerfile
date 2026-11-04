@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
 
 # Copy dependency files first for better caching
@@ -9,17 +9,9 @@ RUN npm ci
 # Copy source files
 COPY . .
 
-# Build arguments (set at build time)
-ARG REACT_APP_API_BASE
-ARG REACT_APP_COGNITO_REGION=eu-central-1
-ARG REACT_APP_COGNITO_USER_POOL_ID=eu-central-1_9GKrnPnwt
-ARG REACT_APP_COGNITO_APP_CLIENT_ID=nbi6of817it1n1s6g2tfadlc6
-
-# Set environment variables from build args
+# Empty API base: the app calls /api on its own origin and nginx proxies it to the backend
+ARG REACT_APP_API_BASE=
 ENV REACT_APP_API_BASE=${REACT_APP_API_BASE}
-ENV REACT_APP_COGNITO_REGION=${REACT_APP_COGNITO_REGION}
-ENV REACT_APP_COGNITO_USER_POOL_ID=${REACT_APP_COGNITO_USER_POOL_ID}
-ENV REACT_APP_COGNITO_APP_CLIENT_ID=${REACT_APP_COGNITO_APP_CLIENT_ID}
 
 # Build the app
 RUN npm run build

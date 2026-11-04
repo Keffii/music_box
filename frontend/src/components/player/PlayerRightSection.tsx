@@ -1,5 +1,4 @@
 import React from 'react';
-import { GRAFANA_URL, GRAFANA_ICON_URL } from '../../utils/constants';
 import { VolumeControl } from './VolumeControl';
 
 interface PlayerRightSectionProps {
@@ -29,19 +28,6 @@ export const PlayerRightSection: React.FC<PlayerRightSectionProps> = ({
         onVolumeChangeEnd={onVolumeChangeEnd}
         onMute={onMute}
       />
-      <a
-        href={GRAFANA_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="grafana-link"
-        title="View Statistics"
-      >
-        <img
-          src={GRAFANA_ICON_URL}
-          alt="Grafana"
-          className="grafana-icon"
-        />
-      </a>
     </div>
   );
 };

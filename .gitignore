@@ -33,13 +33,7 @@ frontend/yarn-error.log*
 .vscode/
 .idea/
 
-# Docker env (keep secrets local)
-.env.docker
-
-# Docker env
-.env.docker
-
-# Repository env (do not commit secrets)
+# Local overrides for docker compose (copy .env.example)
 .env
 
 # Additional ignores
@@ -50,10 +44,6 @@ frontend/dist/
 frontend/src/components/MusicPlayer.old.tsx
 frontend/STRUCTURE.md
 
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
 
 # Music folder: only the catalog and README are committed (Pixabay tracks may not be redistributed)
 music/*
