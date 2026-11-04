@@ -214,6 +214,6 @@ public class PlaylistController {
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
             return jwt.getSubject();
         }
-        return "default-user";
+        throw new IllegalStateException("User is not authenticated");
     }
 }
