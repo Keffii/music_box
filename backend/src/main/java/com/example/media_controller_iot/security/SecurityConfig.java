@@ -11,6 +11,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -24,7 +25,8 @@ import java.util.List;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   @Value("${app.device.key:}") String deviceKey) throws Exception {
         http
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
@@ -36,8 +38,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/player/stream").permitAll()
                 // <audio> and <img> cannot send headers either; the files are public tracks and covers
                 .requestMatchers(HttpMethod.GET, "/media/**").permitAll()
+                // the ESP32 remote: shared key only, a user JWT is not enough
+                .requestMatchers("/api/device/**").hasRole(DeviceKeyFilter.ROLE)
                 .anyRequest().authenticated()
             )
+            .addFilterBefore(new DeviceKeyFilter(deviceKey), BearerTokenAuthenticationFilter.class)
             .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()));
 
         return http.build();

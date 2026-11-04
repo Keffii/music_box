@@ -33,7 +33,7 @@ public class PlayerController {
         if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
             return jwt.getSubject();
         }
-        return null; // Allow anonymous commands (e.g., Bluetooth listener)
+        return null;
     }
 
     @GetMapping("/state")
