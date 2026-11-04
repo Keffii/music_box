@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "fonts_inter.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -145,18 +146,23 @@ static void icon_speaker(gfx_t *g, int cx, int cy, int s, uint16_t c, bool muted
     }
 }
 
+// ---- text styles (Inter, see fonts_inter.h) ---------------------------------------------------
+#define F_LABEL     (&inter_9_semibold)
+#define F_BODY      (&inter_10_regular)
+#define F_STRONG    (&inter_10_semibold)
+#define F_TITLE     (&inter_17_bold)
+#define F_BIG       (&inter_26_bold)
+#define TRACK_CAPS  10   // letter spacing for capitals, in 1/16 px (about 0.6 px)
+
+static int text(gfx_t *g, const gfx_font_t *f, int x, int y, const char *s, uint16_t c, gfx_align_t align, int tracking)
+{
+    return gfx_text(g, f, x, y, s, c, align, tracking, 0, GFX_W);
+}
+
 // ---- pieces of the main screen ----------------------------------------------------------------
 static void draw_header(gfx_t *g, const ui_model_t *m, uint32_t now)
 {
-    // The current track's genre, in capitals; "MUSIC BOX" when there is none (e.g. an empty library).
-    // 15 characters fit left of the status icons.
-    char label[16];
-    const char *src = m->title[0] && m->category[0] ? m->category : "Music Box";
-    size_t n = 0;
-    for (; src[n] && n < sizeof label - 1; n++) label[n] = (char)toupper((unsigned char)src[n]);
-    label[n] = '\0';
-    gfx_text(g, 2, 2, label, 1, C_ACCENT);
-
+    (void)now;
     int x = GFX_W - 2;
     // link indicator: three rising bars
     for (int i = 2; i >= 0; i--) {
@@ -166,20 +172,29 @@ static void draw_header(gfx_t *g, const ui_model_t *m, uint32_t now)
         x -= 1;
     }
     x -= 4;
-    if (m->repeat) { x -= 6; gfx_text(g, x, 2, "R", 1, C_ACCENT2); x -= 2; }
-    if (m->shuffle) { x -= 6; gfx_text(g, x, 2, "S", 1, C_ACCENT2); }
-    (void)now;
-    gfx_fill_rect(g, 0, 11, GFX_W, 1, C_PANEL);
+    if (m->repeat) x -= text(g, F_LABEL, x, 9, "R", C_ACCENT2, GFX_RIGHT, 0) + 4;
+    if (m->shuffle) x -= text(g, F_LABEL, x, 9, "S", C_ACCENT2, GFX_RIGHT, 0) + 4;
+
+    // The current track's genre in capitals; "MUSIC BOX" when there is none (e.g. an empty library).
+    char upper[24], label[24];
+    const char *src = m->title[0] && m->category[0] ? m->category : "Music Box";
+    size_t n = 0;
+    for (; src[n] && n < sizeof upper - 1; n++) upper[n] = (char)toupper((unsigned char)src[n]);
+    upper[n] = '\0';
+    gfx_text_fit(F_LABEL, upper, TRACK_CAPS, x - 4, label, sizeof label);
+    text(g, F_LABEL, 2, 9, label, C_ACCENT, GFX_LEFT, TRACK_CAPS);
+
+    gfx_fill_rect(g, 0, 12, GFX_W, 1, C_PANEL);
 }
 
 static void draw_title(gfx_t *g, const ui_model_t *m, uint32_t now)
 {
     const char *title = m->title[0] ? m->title : "No songs yet";
     const char *artist = m->title[0] ? m->artist : "Add tracks to music/";
-    int w = gfx_text_width(title, 2);
-    int y = 15;
-    if (w <= GFX_W - 4) {
-        gfx_text(g, (GFX_W - w) / 2, y, title, 2, C_TEXT);
+    int w = gfx_text_width(F_TITLE, title, 0);
+    int y = 29; // baseline
+    if (w <= GFX_W - 6) {
+        text(g, F_TITLE, GFX_W / 2, y, title, C_TEXT, GFX_CENTER, 0);
     } else {
         // marquee: hold at the start, then scroll, with a gap before the text repeats
         int gap = 36;
@@ -188,13 +203,12 @@ static void draw_title(gfx_t *g, const ui_model_t *m, uint32_t now)
         int period = hold + span * 28;
         int t = (int)(now % (uint32_t)period);
         int offset = t < hold ? 0 : (t - hold) / 28;
-        gfx_text_clipped(g, 2 - offset, y, title, 2, C_TEXT, 2, GFX_W - 2);
-        gfx_text_clipped(g, 2 - offset + span, y, title, 2, C_TEXT, 2, GFX_W - 2);
+        gfx_text(g, F_TITLE, 3 - offset, y, title, C_TEXT, GFX_LEFT, 0, 3, GFX_W - 3);
+        gfx_text(g, F_TITLE, 3 - offset + span, y, title, C_TEXT, GFX_LEFT, 0, 3, GFX_W - 3);
     }
-    char line[22];
-    snprintf(line, sizeof line, "%.21s", artist); // 21 characters fit on one line
-    int aw = gfx_text_width(line, 1);
-    gfx_text(g, (GFX_W - aw) / 2, 32, line, 1, C_MUTED);
+    char line[48];
+    gfx_text_fit(F_BODY, artist, 0, GFX_W - 8, line, sizeof line);
+    text(g, F_BODY, GFX_W / 2, 40, line, C_MUTED, GFX_CENTER, 0);
 }
 
 static void draw_footer(gfx_t *g, const ui_model_t *m)
@@ -203,21 +217,20 @@ static void draw_footer(gfx_t *g, const ui_model_t *m)
     if (m->playing) icon_play(g, 6, y + 4, 4, C_TEXT);
     else icon_pause(g, 6, y + 4, 4, C_TEXT);
 
-    int bx = 16, bw = 84, bh = 5, by = y + 2;
+    // number (or MUTE) on the right; the bar takes the space that is left
+    char vol[8];
+    snprintf(vol, sizeof vol, "%d", m->volume);
+    const char *right = m->muted ? "MUTE" : vol;
+    int tw = text(g, F_STRONG, GFX_W - 3, 94, right, m->muted ? C_BAD : C_TEXT, GFX_RIGHT,
+                  m->muted ? TRACK_CAPS : 0);
+
+    int bx = 16, bh = 5, by = y + 2;
+    int bw = GFX_W - 3 - tw - 6 - bx;
     gfx_fill_round_rect(g, bx, by, bw, bh, 2, C_PANEL);
     int fill = m->muted ? 0 : (bw * m->volume) / 100;
     for (int i = 0; i < fill; i++) {
         uint16_t c = gfx_mix(C_ACCENT2, C_ACCENT, (uint8_t)(i * 255 / bw));
         gfx_fill_rect(g, bx + i, by + 1, 1, bh - 2, c);
-    }
-    if (fill > 0) gfx_fill_rect(g, bx, by + 1, 1, bh - 2, C_ACCENT2);
-
-    char vol[8];
-    if (m->muted) {
-        gfx_text(g, 104, y + 1, "MUTE", 1, C_BAD);
-    } else {
-        snprintf(vol, sizeof vol, "%3d", m->volume);
-        gfx_text(g, 106, y + 1, vol, 1, C_TEXT);
     }
 }
 
@@ -250,16 +263,13 @@ static void draw_flash(gfx_t *g, const ui_model_t *m, uint32_t age)
     case UI_FLASH_PREV:   icon_next(g, cx + 1, cy, s * 2 / 3, C_TEXT, true); label = "PREVIOUS"; break;
     case UI_FLASH_MUTE:   icon_speaker(g, cx - 3, cy, s, C_TEXT, true); label = "MUTED"; break;
     case UI_FLASH_UNMUTE: icon_speaker(g, cx - 4, cy, s, C_TEXT, false); label = "SOUND ON"; break;
-    case UI_FLASH_SEEK: {
-        const char *t = "+10";
-        gfx_text(g, cx - gfx_text_width(t, 2) / 2, cy - 7, t, 2, C_TEXT);
+    case UI_FLASH_SEEK:
+        text(g, F_TITLE, cx, cy + 6, "+10", C_TEXT, GFX_CENTER, 0);
         label = "SECONDS";
         break;
-    }
     default: break;
     }
-    int lw = gfx_text_width(label, 1);
-    gfx_text(g, (GFX_W - lw) / 2, 70, label, 1, C_TEXT);
+    text(g, F_STRONG, GFX_W / 2, 77, label, C_TEXT, GFX_CENTER, TRACK_CAPS);
 }
 
 static void draw_knob_overlay(gfx_t *g, const ui_model_t *m, uint32_t age)
@@ -270,14 +280,13 @@ static void draw_knob_overlay(gfx_t *g, const ui_model_t *m, uint32_t age)
     gfx_round_rect(g, x, y, w, h, 6, C_ACCENT2);
     char num[8];
     snprintf(num, sizeof num, "%d", m->volume);
-    int nw = gfx_text_width(num, 3);
     icon_speaker(g, x + 16, y + 14, 7, C_TEXT, m->volume == 0);
-    gfx_text(g, x + 62 - nw / 2, y + 5, num, 3, C_TEXT);
-    int bx = x + 8, bw = w - 16, by = y + h - 9;
-    gfx_fill_rect(g, bx, by, bw, 4, C_BG);
+    text(g, F_BIG, x + 62, y + 25, num, C_TEXT, GFX_CENTER, 0);
+    int bx = x + 8, bw = w - 16, by = y + h - 7;
+    gfx_fill_rect(g, bx, by, bw, 3, C_BG);
     int fill = bw * m->volume / 100;
     for (int i = 0; i < fill; i++) {
-        gfx_fill_rect(g, bx + i, by, 1, 4, gfx_mix(C_ACCENT2, C_ACCENT, (uint8_t)(i * 255 / bw)));
+        gfx_fill_rect(g, bx + i, by, 1, 3, gfx_mix(C_ACCENT2, C_ACCENT, (uint8_t)(i * 255 / bw)));
     }
 }
 
@@ -293,22 +302,22 @@ static void draw_offline(gfx_t *g, const ui_model_t *m, uint32_t now)
     int phase = (int)(now % 1400);
     int r = 8 + phase / 100;
     uint8_t v = (uint8_t)(255 - phase * 255 / 1400);
-    gfx_circle(g, GFX_W / 2, 26, r, gfx_mix(C_BG, wifi ? C_WARN : C_BAD, v));
-    gfx_fill_circle(g, GFX_W / 2, 26, 6, wifi ? C_WARN : C_BAD);
+    gfx_circle(g, GFX_W / 2, 24, r, gfx_mix(C_BG, wifi ? C_WARN : C_BAD, v));
+    gfx_fill_circle(g, GFX_W / 2, 24, 6, wifi ? C_WARN : C_BAD);
 
-    gfx_text(g, (GFX_W - gfx_text_width(line1, 2)) / 2, 46, line1, 2, C_TEXT);
-    gfx_text(g, (GFX_W - gfx_text_width(line2, 1)) / 2, 64, line2, 1, C_MUTED);
+    text(g, F_TITLE, GFX_W / 2, 56, line1, C_TEXT, GFX_CENTER, 0);
+    // centre the line without the dots, so it does not jump while they animate
+    int w2 = gfx_text_width(F_BODY, line2, 0);
+    int x2 = (GFX_W - w2) / 2;
+    text(g, F_BODY, x2, 69, line2, C_MUTED, GFX_LEFT, 0);
+    static const char *dots[] = {"", ".", "..", "..."};
+    text(g, F_BODY, x2 + w2 + 1, 69, dots[(now / 400) % 4], C_MUTED, GFX_LEFT, 0);
 
-    char dots[4] = "...";
-    dots[(now / 400) % 4 == 3 ? 3 : (now / 400) % 4] = '\0';
-    gfx_text(g, (GFX_W + gfx_text_width(line2, 1)) / 2 + 1, 64, dots, 1, C_MUTED);
-
-    // drop the scheme so the address fits (21 characters per line)
     const char *addr = m->server;
     if (strncmp(addr, "http://", 7) == 0) addr += 7;
-    char server[22];
-    snprintf(server, sizeof server, "%.21s", addr);
-    gfx_text(g, (GFX_W - gfx_text_width(server, 1)) / 2, 84, server, 1, gfx_rgb(90, 80, 120));
+    char server[48];
+    gfx_text_fit(F_BODY, addr, 0, GFX_W - 8, server, sizeof server);
+    text(g, F_BODY, GFX_W / 2, 89, server, gfx_rgb(90, 80, 120), GFX_CENTER, 0);
 }
 
 // ---- entry point -------------------------------------------------------------------------------

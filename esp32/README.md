@@ -107,12 +107,28 @@ The commands are `PLAY`, `PAUSE`, `PLAY_PAUSE`, `NEXT`, `PREV`, `MUTE`, `SHUFFLE
 
 ## Previewing the screen on a PC
 
-`ui.c`, `gfx.c` and `font5x7.c` don't depend on ESP-IDF, so the screens can be rendered on a computer:
+`ui.c`, `gfx.c` and `fonts_inter.c` don't depend on ESP-IDF, so the screens can be rendered on a computer:
 
 ```bash
 cd esp32/tools
-gcc -O2 -I../main render_preview.c ../main/ui.c ../main/gfx.c ../main/font5x7.c -o render_preview
+gcc -O2 -I../main render_preview.c ../main/ui.c ../main/gfx.c ../main/fonts_inter.c -o render_preview
 mkdir -p out && ./render_preview out && python ppm_sheet.py out preview.png 3
+```
+
+## Fonts
+
+The screen uses [Inter](https://rsms.me/inter/) (SIL Open Font License, see
+[`main/fonts/OFL-Inter.txt`](main/fonts/OFL-Inter.txt)), pre-rendered into anti-aliased bitmaps with
+16 levels of coverage in [`main/fonts_inter.c`](main/fonts_inter.c): 9, 10 and 17 px for the text,
+and 26 px digits for the volume overlay. The firmware only blends pixels and has no font engine.
+
+That file is generated and committed, so building the firmware needs nothing extra. To change sizes
+or weights, edit the list at the top of [`tools/make_fonts.py`](tools/make_fonts.py) and regenerate it:
+
+```bash
+pip install pillow
+curl -L -o Inter.ttf "https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz,wght%5D.ttf"
+python tools/make_fonts.py Inter.ttf main
 ```
 
 ## Troubleshooting

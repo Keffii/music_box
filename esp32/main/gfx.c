@@ -1,6 +1,6 @@
 #include "gfx.h"
-#include "font5x7.h"
 
+#include <stdio.h>
 #include <string.h>
 
 static inline uint16_t swap16(uint16_t v) { return (uint16_t)((v << 8) | (v >> 8)); }
@@ -170,34 +170,74 @@ void gfx_dim(gfx_t *g, uint8_t keep)
     }
 }
 
-int gfx_text_clipped(gfx_t *g, int x, int y, const char *s, int scale, uint16_t color, int clip_x0, int clip_x1)
+static const gfx_glyph_t *glyph_of(const gfx_font_t *f, char c)
 {
+    unsigned char u = (unsigned char)c;
+    if (u < f->first || u > f->last) u = (f->first <= '?' && '?' <= f->last) ? '?' : f->first;
+    return &f->glyphs[u - f->first];
+}
+
+int gfx_text_width(const gfx_font_t *f, const char *s, int tracking16)
+{
+    int pen16 = 0;
+    for (const char *p = s; *p; p++) {
+        pen16 += glyph_of(f, *p)->adv16;
+        if (p[1]) pen16 += tracking16;
+    }
+    return (pen16 + 8) >> 4;
+}
+
+/** Blends a colour into one pixel with coverage a (0..15). */
+static void blend_px(gfx_t *g, int x, int y, uint16_t color, int a)
+{
+    if ((unsigned)x >= GFX_W || (unsigned)y >= GFX_H || a == 0) return;
+    uint16_t *dst = &g->px[y * GFX_W + x];
+    *dst = a >= 15 ? swap16(color) : swap16(gfx_mix(swap16(*dst), color, (uint8_t)(a * 17)));
+}
+
+int gfx_text(gfx_t *g, const gfx_font_t *f, int x, int y, const char *s, uint16_t color,
+             gfx_align_t align, int tracking16, int clip_x0, int clip_x1)
+{
+    int width = gfx_text_width(f, s, tracking16);
+    if (align == GFX_CENTER) x -= width / 2;
+    else if (align == GFX_RIGHT) x -= width;
+    if (clip_x0 < 0) clip_x0 = 0;
+    if (clip_x1 > GFX_W) clip_x1 = GFX_W;
+
+    int pen16 = x * 16;
     for (; *s; s++) {
-        const uint8_t *glyph = font5x7_glyph(*s);
-        for (int col = 0; col < 5; col++) {
-            uint8_t bits = glyph[col];
-            for (int row = 0; row < 8; row++) {
-                if (!(bits & (1 << row))) continue;
-                for (int sy = 0; sy < scale; sy++) {
-                    for (int sx = 0; sx < scale; sx++) {
-                        int px = x + col * scale + sx;
-                        if (px >= clip_x0 && px < clip_x1) gfx_pixel(g, px, y + row * scale + sy, color);
-                    }
-                }
+        const gfx_glyph_t *gl = glyph_of(f, *s);
+        int gx = ((pen16 + 8) >> 4) + gl->x;
+        int gy = y + gl->y;
+        int row_bytes = (gl->w + 1) / 2;
+        const uint8_t *bits = f->bitmap + gl->offset;
+        for (int row = 0; row < gl->h; row++) {
+            for (int col = 0; col < gl->w; col++) {
+                int px = gx + col;
+                if (px < clip_x0 || px >= clip_x1) continue;
+                uint8_t b = bits[row * row_bytes + col / 2];
+                int a = (col & 1) ? (b & 0x0F) : (b >> 4);
+                blend_px(g, px, gy + row, color, a);
             }
         }
-        x += 6 * scale;
+        pen16 += gl->adv16 + tracking16;
     }
-    return x;
+    return width;
 }
 
-int gfx_text(gfx_t *g, int x, int y, const char *s, int scale, uint16_t color)
+void gfx_text_fit(const gfx_font_t *f, const char *s, int tracking16, int max_w, char *out, int out_size)
 {
-    return gfx_text_clipped(g, x, y, s, scale, color, 0, GFX_W);
-}
-
-int gfx_text_width(const char *s, int scale)
-{
-    int n = (int)strlen(s);
-    return n == 0 ? 0 : n * 6 * scale - scale; // no gap after the last glyph
+    if (out_size <= 0) return;
+    snprintf(out, (size_t)out_size, "%s", s);
+    if (gfx_text_width(f, out, tracking16) <= max_w) return;
+    // drop characters from the end until the text plus "..." fits
+    int n = (int)strlen(out);
+    while (n > 0) {
+        n--;
+        while (n > 0 && out[n - 1] == ' ') n--; // no space before the dots
+        if (n + 4 > out_size) continue;
+        memcpy(out + n, "...", 4);
+        if (gfx_text_width(f, out, tracking16) <= max_w) return;
+    }
+    snprintf(out, (size_t)out_size, "...");
 }

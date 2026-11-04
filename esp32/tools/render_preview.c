@@ -1,6 +1,6 @@
 // Renders UI frames on a PC so the screen design can be checked without hardware.
 //
-//   gcc -O2 -I../main render_preview.c ../main/ui.c ../main/gfx.c ../main/font5x7.c -o render_preview
+//   gcc -O2 -I../main render_preview.c ../main/ui.c ../main/gfx.c ../main/fonts_inter.c -o render_preview
 //   ./render_preview out_dir
 //
 // Writes one binary PPM (P6) per scene. The colours match what the SSD1351 shows.
@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "ui.h"
+#include "fonts_inter.h"
 
 static gfx_t g;
 
@@ -104,15 +105,20 @@ int main(int argc, char **argv)
     m.flash = UI_FLASH_NONE;
     scene(dir, "13_empty", &m, 15000, 15500);
 
-    // font check: every printable character
+    // font check: every printable character in the small fonts, plus the large sizes
     gfx_clear(&g, 0);
-    char line[22];
-    for (int row = 0; row < 5; row++) {
-        int n = 0;
-        for (int c = 0x20 + row * 20; c < 0x20 + (row + 1) * 20 && c <= 0x7E; c++) line[n++] = (char)c;
-        line[n] = 0;
-        gfx_text(&g, 2, 4 + row * 12, line, 1, gfx_rgb(255, 255, 255));
+    const uint16_t white = gfx_rgb(255, 255, 255);
+    const char *rows[] = {
+        " !\"#$%&'()*+,-./0123456789:;<=>?@",
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`",
+        "abcdefghijklmnopqrstuvwxyz{|}~",
+    };
+    for (int i = 0; i < 3; i++) {
+        gfx_text(&g, &inter_9_semibold, 1, 9 + i * 11, rows[i], white, GFX_LEFT, 0, 0, GFX_W);
+        gfx_text(&g, &inter_10_regular, 1, 42 + i * 12, rows[i], white, GFX_LEFT, 0, 0, GFX_W);
     }
+    gfx_text(&g, &inter_17_bold, 1, 92, "Better Day", white, GFX_LEFT, 0, 0, GFX_W);
+    gfx_text(&g, &inter_26_bold, GFX_W - 1, 92, "72", white, GFX_RIGHT, 0, 0, GFX_W);
     save(dir, "14_font");
     return 0;
 }
