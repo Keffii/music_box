@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMusic } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/authService';
 import logo from '../assets/logo.png';
 import './Auth.css';
 
@@ -24,13 +21,10 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
 
     try {
       const result = await signIn(username, password);
-      
+      // On success the AuthContext updates and App shows the player
       if (!result.success) {
         setError(result.error || 'Login failed');
       }
-      // On success, the AuthContext will update and App will show main content
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +43,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
           {error && <div className="form-error">{error}</div>}
           
           <div className="form-group">
-            <label className="form-label" htmlFor="username">Email or Username</label>
+            <label className="form-label" htmlFor="username">Username</label>
             <input
               id="username"
               type="text"
@@ -87,16 +81,9 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
 
         <div className="auth-footer">
           Don't have an account?{' '}
-          <a 
-            href="#" 
-            className="auth-link" 
-            onClick={(e) => {
-              e.preventDefault();
-              onSwitchToSignup();
-            }}
-          >
+          <button type="button" className="auth-link" onClick={onSwitchToSignup}>
             Sign Up
-          </a>
+          </button>
         </div>
       </div>
     </div>

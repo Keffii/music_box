@@ -1,4 +1,5 @@
-export const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8080';
+// Empty means same origin: nginx (Docker) or the dev server proxy forwards /api and /media.
+export const API_BASE = process.env.REACT_APP_API_BASE || '';
 
 export const GRAFANA_URL = 'https://keffii.grafana.net/d/ad6pm99/music-box-db?orgId=1&from=now-6h&to=now&timezone=browser';
 

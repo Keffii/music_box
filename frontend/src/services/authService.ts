@@ -1,167 +1,111 @@
-import { Amplify } from 'aws-amplify';
-import { 
-  signIn, 
-  signUp, 
-  signOut, 
-  getCurrentUser,
-  fetchAuthSession,
-  confirmSignUp,
-  resendSignUpCode
-} from 'aws-amplify/auth';
+import { API_BASE } from '../utils/constants';
 
-// Configure Amplify (this will be called from index.tsx)
-export const configureAmplify = () => {
-  const userPoolId = process.env.REACT_APP_COGNITO_USER_POOL_ID;
-  const userPoolClientId = process.env.REACT_APP_COGNITO_APP_CLIENT_ID;
-  const region = process.env.REACT_APP_COGNITO_REGION || 'us-east-1';
+const TOKEN_KEY = 'musicbox.token';
 
-  if (!userPoolId || !userPoolClientId) {
-    console.warn('Cognito configuration missing. Auth will not work.');
-    return;
+export const AUTH_EXPIRED_EVENT = 'musicbox:auth-expired';
+
+export interface AuthUser {
+  userId: string;
+  username: string;
+}
+
+export interface AuthResult {
+  success: boolean;
+  error?: string;
+  user?: AuthUser;
+}
+
+const readToken = (): string | null => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
   }
-
-  Amplify.configure({
-    Auth: {
-      Cognito: {
-        userPoolId: userPoolId,
-        userPoolClientId: userPoolClientId,
-      }
-    }
-  });
 };
 
-export interface SignUpParams {
-  username: string;
-  password: string;
-  email: string;
-}
+const writeToken = (token: string | null) => {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Storage can be unavailable (private mode); the session then lasts until reload.
+  }
+};
 
-export interface SignInParams {
-  username: string;
-  password: string;
-}
+let memoryToken: string | null = readToken();
+
+const errorMessage = async (res: Response, fallback: string): Promise<string> => {
+  try {
+    const data = await res.json();
+    return data.error || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const credentialsRequest = async (path: string, username: string, password: string): Promise<AuthResult> => {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) {
+      return { success: false, error: await errorMessage(res, 'Request failed') };
+    }
+    const data = await res.json();
+    memoryToken = data.token;
+    writeToken(data.token);
+    return { success: true, user: { userId: data.userId, username: data.username } };
+  } catch {
+    return { success: false, error: 'Cannot reach the server' };
+  }
+};
 
 export const authService = {
-  // Sign up a new user
-  async signUp({ username, password, email }: SignUpParams) {
-    try {
-      const { userId, nextStep } = await signUp({
-        username,
-        password,
-        options: {
-          userAttributes: {
-            email,
-          },
-        },
-      });
-      
-      return { 
-        success: true, 
-        userId, 
-        requiresConfirmation: nextStep.signUpStep === 'CONFIRM_SIGN_UP'
-      };
-    } catch (error: any) {
-      console.error('Sign up error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Sign up failed'
-      };
-    }
+  signUp(username: string, password: string): Promise<AuthResult> {
+    return credentialsRequest('register', username, password);
   },
 
-  // Confirm sign up with verification code
-  async confirmSignUp(username: string, code: string) {
-    try {
-      await confirmSignUp({ username, confirmationCode: code });
-      return { success: true };
-    } catch (error: any) {
-      console.error('Confirmation error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Confirmation failed'
-      };
-    }
+  signIn(username: string, password: string): Promise<AuthResult> {
+    return credentialsRequest('login', username, password);
   },
 
-  // Resend confirmation code
-  async resendConfirmationCode(username: string) {
-    try {
-      await resendSignUpCode({ username });
-      return { success: true };
-    } catch (error: any) {
-      console.error('Resend code error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to resend code'
-      };
-    }
+  signOut() {
+    memoryToken = null;
+    writeToken(null);
   },
 
-  // Sign in
-  async signIn({ username, password }: SignInParams) {
-    try {
-      const { isSignedIn, nextStep } = await signIn({ username, password });
-      
-      if (isSignedIn) {
-        return { success: true };
-      } else {
-        return { 
-          success: false, 
-          error: `Additional step required: ${nextStep.signInStep}`
-        };
-      }
-    } catch (error: any) {
-      console.error('Sign in error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Sign in failed'
-      };
-    }
+  getAccessToken(): string | null {
+    return memoryToken;
   },
 
-  // Sign out
-  async signOut() {
+  /** Returns the signed-in user, or null when there is no valid token. */
+  async getCurrentUser(): Promise<AuthUser | null> {
+    if (!memoryToken) return null;
     try {
-      await signOut();
-      return { success: true };
-    } catch (error: any) {
-      console.error('Sign out error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Sign out failed'
-      };
-    }
-  },
-
-  // Get current user
-  async getCurrentUser() {
-    try {
-      const user = await getCurrentUser();
-      return { success: true, user };
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
-  },
-
-  // Get JWT token
-  async getAccessToken(): Promise<string | null> {
-    try {
-      const session = await fetchAuthSession();
-      const token = session.tokens?.idToken?.toString();
-      return token || null;
-    } catch (error) {
-      console.error('Failed to get access token:', error);
+      const res = await authFetch(`${API_BASE}/api/auth/me`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
       return null;
     }
   },
+};
 
-  // Check if user is authenticated
-  async isAuthenticated(): Promise<boolean> {
-    try {
-      await getCurrentUser();
-      return true;
-    } catch {
-      return false;
-    }
+/**
+ * fetch with the bearer token attached. A 401 means the token expired or the
+ * backend restarted with a new key, so the session is dropped.
+ */
+export const authFetch = async (input: string, init: RequestInit = {}): Promise<Response> => {
+  const headers = new Headers(init.headers);
+  if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  if (memoryToken) headers.set('Authorization', `Bearer ${memoryToken}`);
+
+  const res = await fetch(input, { ...init, headers });
+  if (res.status === 401 && memoryToken) {
+    authService.signOut();
+    window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
   }
+  return res;
 };

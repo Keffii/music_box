@@ -1,65 +1,54 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { authService } from '../services/authService';
-
-interface User {
-  username: string;
-  userId: string;
-}
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import { authService, AuthResult, AuthUser, AUTH_EXPIRED_EVENT } from '../services/authService';
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  signIn: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (username: string, password: string, email: string) => Promise<any>;
-  signOut: () => Promise<void>;
-  refreshAuth: () => Promise<void>;
+  signIn: (username: string, password: string) => Promise<AuthResult>;
+  signUp: (username: string, password: string) => Promise<AuthResult>;
+  signOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshAuth = async () => {
-    try {
-      const result = await authService.getCurrentUser();
-      if (result.success && result.user) {
-        setUser({
-          username: result.user.username,
-          userId: result.user.userId,
-        });
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    refreshAuth();
+    let cancelled = false;
+    authService.getCurrentUser().then((current) => {
+      if (!cancelled) {
+        setUser(current);
+        setIsLoading(false);
+      }
+    });
+
+    const onExpired = () => setUser(null);
+    window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    };
   }, []);
 
-  const signIn = async (username: string, password: string) => {
-    const result = await authService.signIn({ username, password });
-    if (result.success) {
-      await refreshAuth();
-    }
+  const signIn = useCallback(async (username: string, password: string) => {
+    const result = await authService.signIn(username, password);
+    if (result.success && result.user) setUser(result.user);
     return result;
-  };
+  }, []);
 
-  const signUp = async (username: string, password: string, email: string) => {
-    return await authService.signUp({ username, password, email });
-  };
+  const signUp = useCallback(async (username: string, password: string) => {
+    const result = await authService.signUp(username, password);
+    if (result.success && result.user) setUser(result.user);
+    return result;
+  }, []);
 
-  const signOut = async () => {
-    await authService.signOut();
+  const signOut = useCallback(() => {
+    authService.signOut();
     setUser(null);
-  };
+  }, []);
 
   const value = {
     user,
@@ -68,7 +57,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signUp,
     signOut,
-    refreshAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
