@@ -70,11 +70,6 @@
 			<artifactId>jSerialComm</artifactId>
 			<version>2.10.4</version>
 		</dependency>
-		<dependency>
-		<groupId>software.amazon.awssdk</groupId>
-		<artifactId>s3</artifactId>
-		<version>2.29.39</version>
-		</dependency>
 	<!-- Spring Security -->
 	<dependency>
 		<groupId>org.springframework.boot</groupId>

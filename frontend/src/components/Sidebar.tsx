@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMusic, faHome, faSearch, faPlus, faHeart, faSignOutAlt, faUser, faTrash, faPlay } from '@fortawesome/free-solid-svg-icons';
 import { Song } from '../types/music.types';
 import { playSpecificSong } from '../services/playerService';
+import { coverOf } from '../utils/helpers';
 
 interface SidebarProps {
   onNavigate: (view: 'home' | 'category' | 'search' | 'playlist' | 'all-songs') => void;
@@ -158,10 +159,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
                 onMouseLeave={() => setHoveredFavoriteId(null)}
                 style={{ cursor: 'pointer', position: 'relative' }}
               >
-                {song.coverUrl && (
                   <div style={{ position: 'relative', flexShrink: 0, width: '40px', height: '40px', lineHeight: 0 }}>
                     <img 
-                      src={song.coverUrl} 
+                      src={coverOf(song)} 
                       alt={song.title}
                       className="favorite-cover"
                       style={{
@@ -200,7 +200,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
                       </div>
                     )}
                   </div>
-                )}
                 <div className="favorite-text">
                   <div className="favorite-name">{song.title}</div>
                   <div className="favorite-artist">{song.artist}</div>

@@ -54,3 +54,8 @@ frontend/STRUCTURE.md
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+# Music folder: only the catalog and README are committed (Pixabay tracks may not be redistributed)
+music/*
+!music/tracks.json
+!music/README.md

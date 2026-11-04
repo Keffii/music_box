@@ -34,6 +34,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                 // EventSource cannot send an Authorization header
                 .requestMatchers(HttpMethod.GET, "/api/player/stream").permitAll()
+                // <audio> and <img> cannot send headers either; the files are public tracks and covers
+                .requestMatchers(HttpMethod.GET, "/media/**").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()));

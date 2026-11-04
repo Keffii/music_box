@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Song, ServerState } from '../types/music.types';
 import { API_BASE } from '../utils/constants';
+import { coverOf, DEFAULT_COVER, mediaUrl } from '../utils/helpers';
 import { loadSongs as fetchSongs } from '../services/playerService';
 
 export const useMusicPlayer = () => {
@@ -15,7 +16,7 @@ export const useMusicPlayer = () => {
   const [repeatEnabled, setRepeatEnabled] = useState<boolean>(false);
   const [songTitle, setSongTitle] = useState<string>('Song Name');
   const [songArtist, setSongArtist] = useState<string>('Artist Name');
-  const [coverUrl, setCoverUrl] = useState<string>('/cover/better-day.png');
+  const [coverUrl, setCoverUrl] = useState<string>(DEFAULT_COVER);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const songsRef = useRef<Song[]>([]);
@@ -40,13 +41,7 @@ export const useMusicPlayer = () => {
       setSongTitle(firstSong.title || 'Song Name');
       setSongArtist(firstSong.artist || 'Artist Name');
       
-      // Set cover URL with backend base
-      if (firstSong.coverUrl) {
-        const fullCoverUrl = firstSong.coverUrl.startsWith('http') 
-          ? firstSong.coverUrl 
-          : `${API_BASE}${firstSong.coverUrl}`;
-        setCoverUrl(fullCoverUrl);
-      }
+      setCoverUrl(coverOf(firstSong));
     }
   }, []);
 
@@ -100,20 +95,13 @@ export const useMusicPlayer = () => {
       // Always update the last song ID
       lastSongIdRef.current = data.currentSongId;
       
-      // Update cover URL with fallback
-      if (song.coverUrl) {
-        const fullCoverUrl = song.coverUrl.startsWith('http') 
-          ? song.coverUrl 
-          : `${API_BASE}${song.coverUrl}`;
-        setCoverUrl(fullCoverUrl);
-      } else {
-        setCoverUrl(`${API_BASE}/cover/better-day.jpg`);
-      }
+      setCoverUrl(coverOf(song));
 
       // Update audio source if different
       if (audioRef.current && song.srcUrl) {
+        // Compare absolute URLs: audio.src is always absolute, so a relative path would never match
         const currentSrc = audioRef.current.src;
-        const newSrc = song.srcUrl.startsWith('http') ? song.srcUrl : `${API_BASE}${song.srcUrl}`;
+        const newSrc = mediaUrl(song.srcUrl);
         
         if (currentSrc !== newSrc) {
           const wasPlaying = !audioRef.current.paused;

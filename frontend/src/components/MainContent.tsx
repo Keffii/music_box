@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './MainContent.css';
 import { loadSongsByCategory, getRecentlyPlayed, searchSongs, getPlaylistSongs, setPlaylistQueue, playSpecificSong, loadSongs } from '../services/playerService';
 import { Song } from '../types/music.types';
+import { coverOf } from '../utils/helpers';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faCompass, faPlay, faMusic } from '@fortawesome/free-solid-svg-icons';
 import { faClock } from '@fortawesome/free-regular-svg-icons';
@@ -211,7 +212,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   style={{ position: 'relative', cursor: 'pointer' }}
                 >
                   <div className="card-image" onClick={() => handleSongClick(song, playlistSongs)}>
-                    <img src={song.coverUrl} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                    <img src={coverOf(song)} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
                     {hoveredCardId === song.id && (
                       <div style={{
                         position: 'absolute',
@@ -324,7 +325,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   style={{ position: 'relative', cursor: 'pointer' }}
                 >
                   <div className="card-image" onClick={() => handleSongClick(song, searchResults)}>
-                    <img src={song.coverUrl} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                    <img src={coverOf(song)} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
                     {hoveredCardId === song.id && (
                       <div style={{
                         position: 'absolute',
@@ -408,7 +409,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   style={{ position: 'relative', cursor: 'pointer' }}
                 >
                   <div className="card-image" onClick={() => handleSongClick(song, categorySongs)}>
-                    <img src={song.coverUrl} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                    <img src={coverOf(song)} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
                     {hoveredCardId === song.id && (
                       <div style={{
                         position: 'absolute',
@@ -494,7 +495,7 @@ const MainContent: React.FC<MainContentProps> = ({
                   style={{ position: 'relative', cursor: 'pointer' }}
                 >
                   <div className="card-image" onClick={() => handleSongClick(song, allSongs)}>
-                    <img src={song.coverUrl} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                    <img src={coverOf(song)} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
                     {hoveredCardId === song.id && (
                       <div style={{
                         position: 'absolute',
@@ -565,7 +566,7 @@ const MainContent: React.FC<MainContentProps> = ({
                 style={{ position: 'relative', cursor: 'pointer' }}
               >
                 <div className="card-image" onClick={() => handleSongClick(song, recentlyPlayed)}>
-                  <img src={song.coverUrl} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
+                  <img src={coverOf(song)} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
                   {hoveredCardId === song.id && (
                     <div style={{
                       position: 'absolute',
