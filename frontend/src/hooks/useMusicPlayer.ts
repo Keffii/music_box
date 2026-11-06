@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Song, ServerState } from '../types/music.types';
 import { API_BASE, DEFAULT_COVER } from '../utils/constants';
 import { loadSongs as fetchSongs } from '../services/playerService';
+import { authService } from '../services/authService';
 
 export const useMusicPlayer = () => {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -148,22 +149,65 @@ export const useMusicPlayer = () => {
     }
   }, [updateStateFromServer]);
 
-  // SSE Connection
+  // Live updates of this user's player (Server-Sent Events). Read with fetch() rather than
+  // EventSource, because the stream is per user and needs the Authorization header.
+  // Reconnects after 2 s, with a fresh token each time. Returns a function that stops it.
   const connectSSE = useCallback(() => {
-    const eventSource = new EventSource(`${API_BASE}/api/player/stream`);
+    let stopped = false;
+    let controller: AbortController | null = null;
 
-    eventSource.onmessage = (event: MessageEvent) => {
-      const data: ServerState = JSON.parse(event.data);
-      updateStateFromServer(data);
+    const handleEvent = (block: string) => {
+      const data = block
+        .split('\n')
+        .filter(line => line.startsWith('data:'))
+        .map(line => line.slice(5).replace(/^ /, ''))
+        .join('\n');
+      if (!data) return; // e.g. the ":ping" heartbeat
+      try {
+        updateStateFromServer(JSON.parse(data) as ServerState);
+      } catch (e) {
+        console.warn('Ignoring a malformed player update', e);
+      }
     };
 
-    eventSource.onerror = () => {
-      console.warn('SSE connection lost – reconnecting...');
-      eventSource.close();
-      setTimeout(connectSSE, 2000);
+    const run = async () => {
+      while (!stopped) {
+        controller = new AbortController();
+        try {
+          const token = await authService.getAccessToken();
+          const res = await fetch(`${API_BASE}/api/player/stream`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            cache: 'no-store',
+            signal: controller.signal,
+          });
+          if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer = (buffer + decoder.decode(value, { stream: true })).replace(/\r\n/g, '\n');
+            let end;
+            while ((end = buffer.indexOf('\n\n')) >= 0) {
+              handleEvent(buffer.slice(0, end));
+              buffer = buffer.slice(end + 2);
+            }
+          }
+        } catch (e) {
+          if (stopped) return;
+          console.warn('Player stream lost, reconnecting...', e);
+        }
+        if (!stopped) await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     };
 
-    return () => eventSource.close();
+    run();
+    return () => {
+      stopped = true;
+      controller?.abort();
+    };
   }, [updateStateFromServer]);
 
   // Update songsRef when songs change

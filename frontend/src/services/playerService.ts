@@ -179,6 +179,21 @@ export const createPlaylist = async (name: string): Promise<boolean> => {
   }
 };
 
+export const renamePlaylist = async (playlistId: number, name: string): Promise<boolean> => {
+  try {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_BASE}/api/playlists/${playlistId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ name })
+    });
+    return res.ok;
+  } catch (error) {
+    console.error('Failed to rename playlist:', error);
+    return false;
+  }
+};
+
 export const deletePlaylist = async (playlistId: number): Promise<boolean> => {
   try {
     const headers = await getHeaders();

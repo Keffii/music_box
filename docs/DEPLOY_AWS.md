@@ -182,6 +182,10 @@ aws ec2 describe-security-groups --filters Name=tag:elasticbeanstalk:environment
 aws ec2 authorize-security-group-ingress --group-id RDS_SECURITY_GROUP_ID --protocol tcp --port 3306 --source-group EB_SECURITY_GROUP_ID
 aws elasticbeanstalk restart-app-server --environment-name music-box-api
 ```
+Each signed-in user has their own player. To let the ESP32 remote control *your* player, add the
+environment property `REMOTE_USER_ID` with your Cognito user ID (the `sub` attribute: Cognito →
+User pools → Users → your user). Without it the remote drives a separate player.
+
 Check: `http://EB_CNAME/actuator/health` shows `{"status":"UP"}`, and
 `http://EB_CNAME/api/player/state` shows a song title once the seed step has run.
 

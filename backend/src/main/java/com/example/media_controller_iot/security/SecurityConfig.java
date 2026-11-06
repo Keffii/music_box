@@ -34,12 +34,13 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints (health checks, SSE, nginx health)
+                // Public endpoints (health checks, nginx health)
                 .requestMatchers("/").permitAll()  // Allow nginx health checks
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/health/**").permitAll()
-                .requestMatchers("/api/player/stream").permitAll()  // Player SSE endpoint (EventSource can't send auth headers)
-                
+                // The player stream is per user, so it needs the token too (the frontend
+                // reads it with fetch(), which can send the Authorization header)
+
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             )

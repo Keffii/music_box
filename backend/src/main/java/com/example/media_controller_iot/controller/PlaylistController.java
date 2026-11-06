@@ -79,6 +79,28 @@ public class PlaylistController {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedPlaylist);
     }
 
+    // Rename a playlist
+    @PutMapping("/{playlistId}")
+    public ResponseEntity<Playlist> renamePlaylist(@PathVariable Long playlistId,
+                                                   @RequestBody Map<String, String> request,
+                                                   Authentication authentication) {
+        String userId = getCurrentUserId(authentication);
+        String name = request.get("name");
+        if (name == null || name.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return playlistRepository.findById(Objects.requireNonNull(playlistId))
+                .map(playlist -> {
+                    if (!playlist.getUserId().equals(userId)) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).<Playlist>build();
+                    }
+                    playlist.setName(name.trim());
+                    return ResponseEntity.ok(playlistRepository.save(playlist));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // Delete a playlist
     @DeleteMapping("/{playlistId}")
     @Transactional

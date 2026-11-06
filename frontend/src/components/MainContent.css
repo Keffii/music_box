@@ -123,6 +123,90 @@
   opacity: 1;
 }
 
+/* Playlist page: remove (x) button on a song's cover */
+.song-card-wrap {
+  position: relative;
+}
+
+.card-remove-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.song-card-wrap:hover .card-remove-button,
+.song-card-wrap:focus-within .card-remove-button {
+  opacity: 1;
+}
+
+.card-remove-button:hover,
+.card-remove-button:focus-visible {
+  background: hsl(0, 70%, 50%);
+  transform: scale(1.1);
+  outline: none;
+}
+
+/* Touch screens have no hover, so always show it there */
+@media (hover: none) {
+  .card-remove-button {
+    opacity: 1;
+  }
+}
+
+/* Playlist page title with its rename (pen) button */
+.playlist-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.playlist-rename-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.playlist-rename-button:hover,
+.playlist-rename-button:focus-visible {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.playlist-rename-input {
+  font-size: 28px;
+  font-weight: 700;
+  padding: 2px 8px;
+  margin-bottom: 6px;
+  width: min(420px, 100%);
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+  background: var(--card);
+  color: var(--foreground);
+  outline: none;
+}
+
 .card-cover {
   width: 100%;
   height: 100%;

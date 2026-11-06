@@ -38,7 +38,8 @@ const MusicPlayer: React.FC = () => {
   // Load songs and connect SSE on mount
   useEffect(() => {
     loadSongs();
-    connectSSE();
+    // Stop the stream on unmount (e.g. sign out), so it doesn't keep reconnecting
+    return connectSSE();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
