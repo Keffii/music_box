@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -52,7 +53,9 @@ public class CognitoJwtValidator {
         JWTClaimsSet.Builder expected = new JWTClaimsSet.Builder()
                 .issuer(issuer)
                 .claim("token_use", "id");
-        Set<String> audience = (appClientId == null || appClientId.isBlank()) ? null : Set.of(appClientId);
+        // Not Set.of(): nimbus calls contains(null) on it, which Set.of() rejects with an NPE
+        Set<String> audience = (appClientId == null || appClientId.isBlank())
+                ? null : Collections.singleton(appClientId);
         jwtProcessor.setJWTClaimsSetVerifier(
                 new DefaultJWTClaimsVerifier<>(audience, expected.build(), Set.of("sub", "exp", "iat"), null));
     }
