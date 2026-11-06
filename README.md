@@ -12,7 +12,13 @@
 </p>
 
 ## Website
-Being redeployed. See [docs/DEPLOY_AWS.md](docs/DEPLOY_AWS.md) for the step-by-step AWS setup.
+**Live: <https://aws-redeploy.d21a9pclwaleru.amplifyapp.com>**
+
+Sign up with an email address to try it. Cognito emails you a confirmation code.
+
+It runs on AWS: Amplify (React frontend), CloudFront and Elastic Beanstalk (Spring Boot API),
+RDS MySQL, S3 (music and covers) and Cognito (sign-in). See [docs/DEPLOY_AWS.md](docs/DEPLOY_AWS.md)
+for the step-by-step setup.
 
 ## Features
 - Cloud-based music streaming
