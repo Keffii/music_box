@@ -213,8 +213,8 @@ const MainContent: React.FC<MainContentProps> = ({
                 >
                   <div className="card-image" onClick={() => handleSongClick(song, playlistSongs)}>
                     <img src={song.coverUrl || DEFAULT_COVER} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {hoveredCardId === song.id && (
-                      <div style={{
+                    {(
+                      <div className={`hover-overlay${hoveredCardId === song.id ? ' visible' : ''}`} style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
@@ -326,8 +326,8 @@ const MainContent: React.FC<MainContentProps> = ({
                 >
                   <div className="card-image" onClick={() => handleSongClick(song, searchResults)}>
                     <img src={song.coverUrl || DEFAULT_COVER} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {hoveredCardId === song.id && (
-                      <div style={{
+                    {(
+                      <div className={`hover-overlay${hoveredCardId === song.id ? ' visible' : ''}`} style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
@@ -410,8 +410,8 @@ const MainContent: React.FC<MainContentProps> = ({
                 >
                   <div className="card-image" onClick={() => handleSongClick(song, categorySongs)}>
                     <img src={song.coverUrl || DEFAULT_COVER} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {hoveredCardId === song.id && (
-                      <div style={{
+                    {(
+                      <div className={`hover-overlay${hoveredCardId === song.id ? ' visible' : ''}`} style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
@@ -496,8 +496,8 @@ const MainContent: React.FC<MainContentProps> = ({
                 >
                   <div className="card-image" onClick={() => handleSongClick(song, allSongs)}>
                     <img src={song.coverUrl || DEFAULT_COVER} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {hoveredCardId === song.id && (
-                      <div style={{
+                    {(
+                      <div className={`hover-overlay${hoveredCardId === song.id ? ' visible' : ''}`} style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
@@ -567,8 +567,8 @@ const MainContent: React.FC<MainContentProps> = ({
               >
                 <div className="card-image" onClick={() => handleSongClick(song, recentlyPlayed)}>
                   <img src={song.coverUrl || DEFAULT_COVER} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                  {hoveredCardId === song.id && (
-                    <div style={{
+                  {(
+                    <div className={`hover-overlay${hoveredCardId === song.id ? ' visible' : ''}`} style={{
                       position: 'absolute',
                       top: 0,
                       left: 0,
@@ -615,7 +615,7 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
         <div className="browse-grid">
           <div 
-            className="browse-category" 
+            className="browse-category browse-category--wide" 
             style={{ 
               background: 'linear-gradient(135deg, #2c3e50, #34495e)', 
               cursor: 'pointer',

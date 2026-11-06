@@ -66,10 +66,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
       <div className="sidebar-section">
         <div className="section-header">
           <h3>PLAYLISTS</h3>
-          <FontAwesomeIcon 
-            icon={faPlus} 
+          <FontAwesomeIcon
+            icon={faPlus}
+            className="section-action"
             onClick={() => setShowCreatePlaylist(!showCreatePlaylist)}
-            style={{ cursor: 'pointer' }}
+            title="Create playlist"
           />
         </div>
         {showCreatePlaylist && (
@@ -95,11 +96,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
         )}
         <ul className="playlist-list">
           {playlists.length === 0 ? (
-            <li className="playlist-item" style={{ opacity: 0.5 }}>
+            <li
+              className="playlist-item playlist-empty"
+              role="button"
+              tabIndex={0}
+              onClick={() => setShowCreatePlaylist(true)}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShowCreatePlaylist(true)}
+              title="Create playlist"
+            >
               <FontAwesomeIcon icon={faMusic} />
               <div>
                 <div className="playlist-name">No playlists yet</div>
-                <div className="playlist-count">Click + to create one</div>
+                <div className="playlist-count">Click here or + to create one</div>
               </div>
             </li>
           ) : (
@@ -126,7 +134,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
                     fontSize: '12px',
                     opacity: 0.6,
                     cursor: 'pointer',
-                    padding: '4px'
+                    padding: '4px',
+                    transition: 'opacity 0.2s ease'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
                   onMouseLeave={(e) => e.currentTarget.style.opacity = '0.6'}
@@ -172,8 +181,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
                         display: 'block'
                       }}
                     />
-                    {hoveredFavoriteId === song.id && (
-                      <div style={{
+                    {(
+                      <div className={`hover-overlay${hoveredFavoriteId === song.id ? ' visible' : ''}`} style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
