@@ -114,6 +114,30 @@
   color: var(--primary);
 }
 
+/* The + button (an SVG icon, so the "i" rules above don't reach it) */
+.section-header .section-action {
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.section-header .section-action:hover {
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+/* "No playlists yet": click to create one */
+.playlist-item.playlist-empty {
+  opacity: 0.5;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.playlist-item.playlist-empty:hover,
+.playlist-item.playlist-empty:focus-visible {
+  opacity: 0.85;
+  outline: none;
+}
+
 .playlist-list {
   list-style: none;
   padding: 0;
@@ -145,7 +169,7 @@
   padding: 4px 4px;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease;
   background: transparent;
   min-height: 47px;
   max-height: 47px;
@@ -238,9 +262,16 @@
 }
 
 /* User Profile Section (Bottom) */
+/* Same height as the player bar (MusicPlayer.css), so their top borders line up */
 .sidebar-footer {
   margin-top: auto;
-  padding: 1rem;
+  height: 120px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 1rem;
   border-top: 1px solid var(--sidebar-border);
 }
 
@@ -248,15 +279,15 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem;
+  padding: 0.5rem 0.75rem;
   margin-bottom: 0.5rem;
   background: var(--sidebar-accent);
   border-radius: 8px;
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--primary), var(--accent));
   display: flex;
@@ -283,7 +314,7 @@
 
 .sign-out-button {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 8px;

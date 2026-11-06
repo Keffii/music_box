@@ -33,7 +33,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
   onPlayPause,
 }) => {
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
-  const { playlists } = usePlaylists();
+  const { playlists, refreshPlaylists } = usePlaylists();
   const { showToast } = useToast();
   const [showPlaylistDropdown, setShowPlaylistDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -76,7 +76,8 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
         showToast(`Song already in ${playlistName}`, 'info');
       } else {
         showToast(`Song added to ${playlistName}`, 'success');
-        // Playlist count will update automatically via SSE
+        // Reload so the song count in the sidebar goes up
+        await refreshPlaylists();
       }
     } else {
       showToast('Failed to add song to playlist', 'error');
@@ -84,7 +85,15 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
   };
 
   return (
+    // Three buttons on each side, so the play button sits in the middle
     <div className="player-controls">
+      <button
+        onClick={handleToggleFavorite}
+        className={currentSong && isFavorite(currentSong.id) ? 'active' : ''}
+        title={currentSong && isFavorite(currentSong.id) ? 'Remove from Favorites' : 'Add to Favorites'}
+      >
+        <FontAwesomeIcon icon={currentSong && isFavorite(currentSong.id) ? faHeartSolid : faHeartRegular} size="xl" />
+      </button>
       <button
         onClick={() => sendCommand('SHUFFLE')}
         className={shuffleEnabled ? 'active' : ''}
@@ -107,13 +116,6 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
         title="Repeat"
       >
         <FontAwesomeIcon icon={faRepeat} size="xl" />
-      </button>
-      <button
-        onClick={handleToggleFavorite}
-        className={currentSong && isFavorite(currentSong.id) ? 'active' : ''}
-        title={currentSong && isFavorite(currentSong.id) ? 'Remove from Favorites' : 'Add to Favorites'}
-      >
-        <FontAwesomeIcon icon={currentSong && isFavorite(currentSong.id) ? faHeartSolid : faHeartRegular} size="xl" />
       </button>
       <div style={{ position: 'relative' }} ref={dropdownRef}>
         <button
