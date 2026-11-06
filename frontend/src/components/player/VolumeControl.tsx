@@ -21,12 +21,19 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
 }) => {
   return (
     <div className="player-volume-container">
-      <FontAwesomeIcon
-        icon={isMuted || volume === 0 ? faVolumeXmark : faVolumeHigh}
+      {/* The button keeps the 36px box; fixedWidth keeps both glyphs at the same height */}
+      <button
+        type="button"
         className="player-volume-icon"
         onClick={onMute}
-        size="xl"
-      />
+        title={isMuted || volume === 0 ? 'Unmute' : 'Mute'}
+      >
+        <FontAwesomeIcon
+          icon={isMuted || volume === 0 ? faVolumeXmark : faVolumeHigh}
+          size="xl"
+          fixedWidth
+        />
+      </button>
       <input
         ref={volumeSliderRef}
         className="volume-slider"
