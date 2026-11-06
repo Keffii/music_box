@@ -359,34 +359,195 @@
   }
 }
 
-.browse-category {
-  height: 70px;
-  border-radius: var(--radius);
-  padding: 10px;
+/* Genre and library tiles: dark cards lit in their own hue (--tile-hue), with a fan of covers */
+.browse-tile {
+  --tile-hue: 340;
+  position: relative;
+  overflow: hidden;
+  height: 120px;
+  padding: 14px;
   display: flex;
-  align-items: flex-end;
-  cursor: pointer;
-  transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.35s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border);
-}
-
-.browse-category:hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-/* The full-width Music Library banner grows half as much as the genre tiles */
-.browse-category--wide:hover {
-  transform: scale(1.01);
-}
-
-.browse-category h3 {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  text-align: left;
+  font: inherit;
   color: var(--foreground);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 4px 16px rgba(0, 0, 0, 0.6); /* Stronger shadow for better text visibility */
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: 1px solid hsla(var(--tile-hue), 60%, 70%, 0.16);
+  background:
+    radial-gradient(120% 150% at 0% 100%, hsla(var(--tile-hue), 75%, 55%, 0.32), transparent 60%),
+    linear-gradient(135deg, hsl(var(--tile-hue), 28%, 21%), var(--card) 75%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.browse-tile:hover,
+.browse-tile:focus-visible {
+  transform: translateY(-2px);
+  border-color: hsla(var(--tile-hue), 75%, 72%, 0.5);
+  box-shadow: 0 10px 28px -10px hsla(var(--tile-hue), 85%, 60%, 0.55);
+}
+
+.browse-tile:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.browse-tile-icon {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: hsl(var(--tile-hue), 85%, 82%);
+  background: hsla(var(--tile-hue), 75%, 65%, 0.18);
+  transition: background-color 0.3s ease;
+}
+
+.browse-tile:hover .browse-tile-icon {
+  background: hsla(var(--tile-hue), 75%, 65%, 0.3);
+}
+
+.browse-tile-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.browse-tile-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+.browse-tile-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.browse-tile-chevron {
+  font-size: 9px;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.browse-tile:hover .browse-tile-chevron,
+.browse-tile:focus-visible .browse-tile-chevron {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Covers overlap in a fan in the top-right corner, and spread a little on hover */
+.browse-tile-covers {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.browse-tile-cover {
+  --cover: 52px;
+  --spin: calc((var(--i) - (var(--n) - 1) / 2) * 7deg);
+  width: var(--cover);
+  height: var(--cover);
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid hsla(var(--tile-hue), 40%, 30%, 0.9);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+  margin-left: calc(var(--cover) * -0.62);
+  transform: rotate(var(--spin));
+  transition: transform 0.35s ease;
+}
+
+.browse-tile-cover:first-child {
+  margin-left: 0;
+}
+
+.browse-tile:hover .browse-tile-cover,
+.browse-tile:focus-visible .browse-tile-cover {
+  transform: translateX(calc((var(--i) - (var(--n) - 1) / 2) * 6px)) translateY(-2px) rotate(calc(var(--spin) * 1.5));
+}
+
+/* The full-width Music Library tile: covers sit centred on the right, a little larger */
+.browse-tile--wide {
+  grid-column: 1 / -1;
+  height: 110px;
+}
+
+.browse-tile--wide .browse-tile-covers {
+  top: 50%;
+  right: 28px;
+  transform: translateY(-50%);
+}
+
+.browse-tile--wide .browse-tile-cover {
+  --cover: 62px;
+}
+
+.browse-tile--wide .browse-tile-title {
+  font-size: 24px;
+}
+
+/* Phones: two narrow tiles per row, so everything is a bit smaller */
+@media (max-width: 767px) {
+  .browse-tile {
+    height: 104px;
+    padding: 12px;
+  }
+
+  .browse-tile-title {
+    font-size: 17px;
+  }
+
+  .browse-tile-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .browse-tile-covers {
+    top: 12px;
+    right: 12px;
+  }
+
+  .browse-tile-cover {
+    --cover: 40px;
+    border-radius: 6px;
+  }
+
+  .browse-tile--wide {
+    height: 96px;
+  }
+
+  .browse-tile--wide .browse-tile-title {
+    font-size: 20px;
+  }
+
+  .browse-tile--wide .browse-tile-covers {
+    right: 16px;
+  }
+
+  .browse-tile--wide .browse-tile-cover {
+    --cover: 48px;
+  }
 }
 
 /* Scrollbar styling */

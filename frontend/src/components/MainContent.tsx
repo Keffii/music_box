@@ -4,11 +4,25 @@ import { loadSongsByCategory, getRecentlyPlayed, searchSongs, getPlaylistSongs, 
 import { Song } from '../types/music.types';
 import { SongCard } from './SongCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faCompass, faPlay, faMusic, faPen } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCompass, faPlay, faMusic, faPen, faBolt, faMicrophoneLines, faMugHot, faWaveSquare, faRecordVinyl } from '@fortawesome/free-solid-svg-icons';
 import { faClock } from '@fortawesome/free-regular-svg-icons';
 import { useAuth } from '../context/AuthContext';
 import { usePlaylists } from '../context/PlaylistContext';
 import { useToast } from '../context/ToastContext';
+import { BrowseTile } from './BrowseTile';
+
+/** Genre tiles on the home page. `name` is the category stored on each song. */
+const GENRES = [
+  { name: 'Electronic', label: 'Electronic', icon: faBolt, hue: 265, tagline: 'Synths and pulses' },
+  { name: 'Hiphop', label: 'Hip-Hop', icon: faMicrophoneLines, hue: 320, tagline: 'Beats and bars' },
+  { name: 'Lofi', label: 'Lofi', icon: faMugHot, hue: 20, tagline: 'Slow and cosy' },
+  { name: 'Trance', label: 'Trance', icon: faWaveSquare, hue: 195, tagline: 'Long builds' },
+];
+
+const countLabel = (n: number) => `${n} song${n !== 1 ? 's' : ''}`;
+
+/** The first few songs that have a cover */
+const pickCovers = (songs: Song[], max: number) => songs.filter(s => s.coverUrl).slice(0, max);
 
 interface MainContentProps {
   viewMode: 'home' | 'category' | 'search' | 'playlist' | 'all-songs';
@@ -37,6 +51,7 @@ const MainContent: React.FC<MainContentProps> = ({
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [playlistSongs, setPlaylistSongs] = useState<Song[]>([]);
   const [allSongs, setAllSongs] = useState<Song[]>([]);
+  const [library, setLibrary] = useState<Song[]>([]);
 
   // Load recently played songs
   const loadRecentlyPlayed = async () => {
@@ -61,9 +76,10 @@ const MainContent: React.FC<MainContentProps> = ({
     }
   }, [viewMode, selectedPlaylistId]);
 
-  // Load recently played on mount
+  // Load recently played, and the library for the tile counts and covers, on mount
   useEffect(() => {
     loadRecentlyPlayed();
+    loadSongs().then((songs) => setLibrary(Array.isArray(songs) ? songs : []));
   }, []);
 
   // Real-time search with debounce
@@ -466,17 +482,17 @@ const MainContent: React.FC<MainContentProps> = ({
           <h2>Browse All Songs</h2>
         </div>
         <div className="browse-grid">
-          <div 
-            className="browse-category browse-category--wide" 
-            style={{ 
-              background: 'linear-gradient(135deg, #2c3e50, #34495e)', 
-              cursor: 'pointer',
-              gridColumn: '1 / -1'
-            }}
+          <BrowseTile
+            wide
+            title="Music Library"
+            subtitle={library.length > 0
+              ? `${countLabel(library.length)} · ${GENRES.length} genres`
+              : 'Every song in one place'}
+            icon={faRecordVinyl}
+            hue={340}
+            covers={pickCovers(library, 5)}
             onClick={handleBrowseAllSongs}
-          >
-            <h3>Music Library</h3>
-          </div>
+          />
         </div>
       </section>
 
@@ -486,34 +502,20 @@ const MainContent: React.FC<MainContentProps> = ({
           <h2>Browse Genres</h2>
         </div>
         <div className="browse-grid">
-          <div 
-            className="browse-category" 
-            style={{ background: 'linear-gradient(135deg, #16a085, #1abc9c)', cursor: 'pointer' }}
-            onClick={() => handleCategoryClick('Electronic')}
-          >
-            <h3>Electronic</h3>
-          </div>
-          <div 
-            className="browse-category" 
-            style={{ background: 'linear-gradient(135deg, #8e44ad, #9b59b6)', cursor: 'pointer' }}
-            onClick={() => handleCategoryClick('Hiphop')}
-          >
-            <h3>Hiphop</h3>
-          </div>
-          <div 
-            className="browse-category" 
-            style={{ background: 'linear-gradient(135deg, #d35400, #e67e22)', cursor: 'pointer' }}
-            onClick={() => handleCategoryClick('Lofi')}
-          >
-            <h3>Lofi</h3>
-          </div>
-          <div 
-            className="browse-category" 
-            style={{ background: 'linear-gradient(135deg, #c0392b, #e74c3c)', cursor: 'pointer' }}
-            onClick={() => handleCategoryClick('Trance')}
-          >
-            <h3>Trance</h3>
-          </div>
+          {GENRES.map((genre) => {
+            const songs = library.filter(s => s.category?.toLowerCase() === genre.name.toLowerCase());
+            return (
+              <BrowseTile
+                key={genre.name}
+                title={genre.label}
+                subtitle={library.length > 0 ? countLabel(songs.length) : genre.tagline}
+                icon={genre.icon}
+                hue={genre.hue}
+                covers={pickCovers(songs, 3)}
+                onClick={() => handleCategoryClick(genre.name)}
+              />
+            );
+          })}
         </div>
       </section>
     </div>
