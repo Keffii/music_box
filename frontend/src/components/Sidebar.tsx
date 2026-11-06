@@ -14,9 +14,12 @@ interface SidebarProps {
   currentView: 'home' | 'category' | 'search' | 'playlist' | 'all-songs';
   onPlaylistClick?: (playlistId: number, playlistName: string) => void;
   selectedPlaylistId?: number | null;
+  /** Phones and tablets: whether the slide-in menu is open */
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistClick, selectedPlaylistId }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistClick, selectedPlaylistId, isOpen, onClose }) => {
   const { favorites } = useFavorites();
   const { playlists, createPlaylist, deletePlaylist } = usePlaylists();
   const { user, signOut } = useAuth();
@@ -43,11 +46,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
 
   const handleFavoriteSongClick = async (song: Song) => {
     const songIds = favorites.map(s => s.id);
+    onClose?.();
     await playSpecificSong(song.id, songIds);
   };
   
   return (
-    <div className="sidebar">
+    <div className={`sidebar${isOpen ? ' open' : ''}`}>
       <div className="sidebar-header">
         <img src={logo} alt="Music Box logo" className="sidebar-logo"/>
         <h1>Music Box</h1>

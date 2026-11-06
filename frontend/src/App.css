@@ -13,8 +13,83 @@
   overflow: hidden;
 }
 
+/* Phones: 100vh includes the hidden part behind the browser's address bar */
+@supports (height: 100dvh) {
+  .App {
+    height: 100dvh;
+  }
+}
+
 .app-container {
   display: flex;
   flex: 1;
   overflow: hidden;
+}
+
+/* Top bar with the menu button: phones and tablets only */
+.mobile-topbar {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    height: 56px;
+    padding: 0 12px;
+    background-color: var(--sidebar-background);
+    border-bottom: 1px solid var(--sidebar-border);
+  }
+
+  .menu-button {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--foreground);
+    font-size: 20px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .menu-button:hover,
+  .menu-button:focus-visible {
+    background-color: var(--sidebar-accent);
+    outline: none;
+  }
+
+  .mobile-topbar-logo {
+    height: 32px;
+    width: auto;
+  }
+
+  .mobile-topbar-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    animation: backdrop-fade 0.25s ease;
+  }
+}
+
+@keyframes backdrop-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

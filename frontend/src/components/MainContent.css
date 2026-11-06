@@ -65,9 +65,35 @@
   gap: 8px;
 }
 
-@media (min-width: 768px) {
-  .card-grid {
-    grid-template-columns: repeat(7, 1fr);
+/* Columns grow with the space; the sidebar takes 256px again from 1025px */
+@media (min-width: 480px) {
+  .card-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 700px) {
+  .card-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 1025px) {
+  .card-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+@media (min-width: 1360px) {
+  .card-grid { grid-template-columns: repeat(7, 1fr); }
+}
+
+/* Phones: the player bar is taller (three rows), and headings are smaller */
+@media (max-width: 640px) {
+  .main-content {
+    padding: 12px 12px 180px;
+  }
+
+  .greeting-section h1 {
+    font-size: 24px;
+  }
+
+  .greeting-section p {
+    font-size: 14px;
   }
 }
 

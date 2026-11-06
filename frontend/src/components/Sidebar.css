@@ -7,6 +7,35 @@
   border-right: 1px solid var(--sidebar-border);
   color: var(--sidebar-foreground);
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Phones and tablets: the sidebar slides in from the left, over the page and the player */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 85vw);
+    z-index: 1100;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ".sidebar" prefix: these must beat the base rules further down this file */
+  .sidebar .sidebar-header {
+    padding: 16px 20px;
+  }
+
+  .sidebar .sidebar-logo {
+    height: 48px;
+  }
 }
 
 .sidebar-header {
