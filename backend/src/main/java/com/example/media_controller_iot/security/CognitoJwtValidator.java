@@ -54,7 +54,7 @@ public class CognitoJwtValidator {
                 .claim("token_use", "id");
         Set<String> audience = (appClientId == null || appClientId.isBlank()) ? null : Set.of(appClientId);
         jwtProcessor.setJWTClaimsSetVerifier(
-                new DefaultJWTClaimsVerifier<>(audience, expected.build(), Set.of("sub", "exp", "iat")));
+                new DefaultJWTClaimsVerifier<>(audience, expected.build(), Set.of("sub", "exp", "iat"), null));
     }
 
     public JWTClaimsSet validateToken(String token) throws Exception {
