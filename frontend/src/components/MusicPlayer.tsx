@@ -22,7 +22,6 @@ const MusicPlayer: React.FC = () => {
     songTitle,
     songArtist,
     coverUrl,
-    setIsPlaying,
     setIsMuted,
     setVolume,
     setCurrentTime,
@@ -30,7 +29,6 @@ const MusicPlayer: React.FC = () => {
     audioRef,
     loadSongs,
     connectSSE,
-    safePlay,
     setUserAdjustingVolume,
   } = useMusicPlayer();
 

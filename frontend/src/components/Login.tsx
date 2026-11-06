@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMusic } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext';
-import { authService } from '../services/authService';
 import logo from '../assets/logo.png';
 import './Auth.css';
 
@@ -87,16 +84,9 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
 
         <div className="auth-footer">
           Don't have an account?{' '}
-          <a 
-            href="#" 
-            className="auth-link" 
-            onClick={(e) => {
-              e.preventDefault();
-              onSwitchToSignup();
-            }}
-          >
+          <button type="button" className="auth-link" onClick={onSwitchToSignup}>
             Sign Up
-          </a>
+          </button>
         </div>
       </div>
     </div>

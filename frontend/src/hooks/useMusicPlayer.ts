@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Song, ServerState } from '../types/music.types';
-import { API_BASE } from '../utils/constants';
+import { API_BASE, DEFAULT_COVER } from '../utils/constants';
 import { loadSongs as fetchSongs } from '../services/playerService';
 
 export const useMusicPlayer = () => {
@@ -15,13 +15,14 @@ export const useMusicPlayer = () => {
   const [repeatEnabled, setRepeatEnabled] = useState<boolean>(false);
   const [songTitle, setSongTitle] = useState<string>('Song Name');
   const [songArtist, setSongArtist] = useState<string>('Artist Name');
-  const [coverUrl, setCoverUrl] = useState<string>('/cover/better-day.png');
+  const [coverUrl, setCoverUrl] = useState<string>(DEFAULT_COVER);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const songsRef = useRef<Song[]>([]);
   const userIsAdjustingVolume = useRef<boolean>(false);
   const volumeUpdateTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSongIdRef = useRef<number | null>(null);
+  const lastCommandSeqRef = useRef<number | null>(null);
 
   // Load songs
   const loadSongs = useCallback(async () => {
@@ -43,6 +44,8 @@ export const useMusicPlayer = () => {
           ? firstSong.coverUrl 
           : `${API_BASE}${firstSong.coverUrl}`;
         setCoverUrl(fullCoverUrl);
+      } else {
+        setCoverUrl(DEFAULT_COVER);
       }
     }
   }, []);
@@ -101,7 +104,7 @@ export const useMusicPlayer = () => {
           : `${API_BASE}${song.coverUrl}`;
         setCoverUrl(fullCoverUrl);
       } else {
-        setCoverUrl(`${API_BASE}/cover/better-day.jpg`);
+        setCoverUrl(DEFAULT_COVER);
       }
 
       // Update audio source if different
@@ -130,12 +133,15 @@ export const useMusicPlayer = () => {
       audioRef.current?.pause();
     }
 
-    // Handle seek forward from ESP32 controller
-    if (data.lastCommand === 'SEEK_FORWARD' && audioRef.current) {
-      audioRef.current.currentTime = Math.min(
-        audioRef.current.currentTime + 10,
-        audioRef.current.duration
-      );
+    // Handle seek forward from the ESP32 remote, only for a new command
+    // (not when the same state is replayed, e.g. after an SSE reconnect)
+    const isNewCommand = lastCommandSeqRef.current !== null && data.commandSeq !== lastCommandSeqRef.current;
+    lastCommandSeqRef.current = data.commandSeq ?? null;
+    if (isNewCommand && data.lastCommand === 'SEEK_FORWARD' && audioRef.current) {
+      const target = audioRef.current.currentTime + 10;
+      audioRef.current.currentTime = Number.isFinite(audioRef.current.duration)
+        ? Math.min(target, audioRef.current.duration)
+        : target;
     }
   }, [safePlay]);
 

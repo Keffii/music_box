@@ -1,3 +1,5 @@
+# AWS Amplify build settings. In Amplify, choose "My app is a monorepo" with root "frontend".
+# Environment variables (REACT_APP_*) are set in the Amplify console; see docs/DEPLOY_AWS.md.
 version: 1
 applications:
   - appRoot: frontend
@@ -5,6 +7,8 @@ applications:
       phases:
         preBuild:
           commands:
+            - nvm install 20
+            - nvm use 20
             - npm ci
         build:
           commands:

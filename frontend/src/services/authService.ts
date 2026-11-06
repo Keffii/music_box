@@ -13,7 +13,6 @@ import {
 export const configureAmplify = () => {
   const userPoolId = process.env.REACT_APP_COGNITO_USER_POOL_ID;
   const userPoolClientId = process.env.REACT_APP_COGNITO_APP_CLIENT_ID;
-  const region = process.env.REACT_APP_COGNITO_REGION || 'us-east-1';
 
   if (!userPoolId || !userPoolClientId) {
     console.warn('Cognito configuration missing. Auth will not work.');
