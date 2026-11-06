@@ -193,7 +193,9 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              aria-describedby="email-hint"
             />
+            <p id="email-hint" className="form-hint">Once confirmed, you can sign in with this email or your username.</p>
           </div>
 
           <div className="form-group">

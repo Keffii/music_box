@@ -20,7 +20,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
     setIsLoading(true);
 
     try {
-      const result = await signIn(username, password);
+      // A username or a verified email both work (email is a sign-in alias in the user pool)
+      const result = await signIn(username.trim(), password);
       
       if (!result.success) {
         setError(result.error || 'Login failed');
@@ -46,16 +47,18 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
           {error && <div className="form-error">{error}</div>}
           
           <div className="form-group">
-            <label className="form-label" htmlFor="username">Username</label>
+            <label className="form-label" htmlFor="username">Username or email</label>
             <input
               id="username"
               type="text"
               className="form-input"
-              placeholder="Enter your username"
+              placeholder="Enter your username or email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
               autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
             />
           </div>
 
