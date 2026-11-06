@@ -7,7 +7,8 @@ interface BrowseTileProps {
   title: string;
   /** e.g. "4 songs" */
   subtitle: string;
-  icon: IconDefinition;
+  /** Optional icon in the top-left corner */
+  icon?: IconDefinition;
   /** Accent hue (0-360) for the glow, icon and border */
   hue: number;
   /** A few songs whose covers fan out on the right */
@@ -25,9 +26,11 @@ export const BrowseTile: React.FC<BrowseTileProps> = ({ title, subtitle, icon, h
     onClick={onClick}
     aria-label={`${title}, ${subtitle}`}
   >
-    <span className="browse-tile-icon">
-      <FontAwesomeIcon icon={icon} />
-    </span>
+    {icon && (
+      <span className="browse-tile-icon">
+        <FontAwesomeIcon icon={icon} />
+      </span>
+    )}
 
     <span className="browse-tile-text">
       <span className="browse-tile-title">{title}</span>

@@ -6,7 +6,8 @@ import { Song } from '../types/music.types';
 interface PageHeroProps {
   /** Accent hue (0-360), the same one the page's tile uses on the home page */
   hue: number;
-  icon: IconDefinition;
+  /** Optional badge on the artwork */
+  icon?: IconDefinition;
   /** Small label above the title, e.g. "Genre" */
   eyebrow: string;
   /** A string becomes the <h1>; pass an element for something else (e.g. the playlist rename field) */
@@ -35,9 +36,11 @@ export const PageHero: React.FC<PageHeroProps> = ({ hue, icon, eyebrow, title, s
           {mosaic.map(song => (
             <img key={song.id} src={song.coverUrl} alt="" />
           ))}
-          <span className={`page-hero-badge${mosaic.length === 0 ? ' page-hero-badge--large' : ''}`}>
-            <FontAwesomeIcon icon={icon} />
-          </span>
+          {icon && (
+            <span className={`page-hero-badge${mosaic.length === 0 ? ' page-hero-badge--large' : ''}`}>
+              <FontAwesomeIcon icon={icon} />
+            </span>
+          )}
         </div>
 
         <div className="page-hero-text">
