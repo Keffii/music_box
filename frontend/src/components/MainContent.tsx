@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './MainContent.css';
-import { loadSongsByCategory, getRecentlyPlayed, searchSongs, getPlaylistSongs, setPlaylistQueue, playSpecificSong, loadSongs } from '../services/playerService';
+import { loadSongsByCategory, getRecentlyPlayed, searchSongs, getPlaylistSongs, setPlaylistQueue, playSpecificSong, loadSongs, removeSongFromPlaylist } from '../services/playerService';
 import { Song } from '../types/music.types';
 import { SongCard } from './SongCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faCompass, faPlay, faMusic } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCompass, faPlay, faMusic, faPen } from '@fortawesome/free-solid-svg-icons';
 import { faClock } from '@fortawesome/free-regular-svg-icons';
 import { useAuth } from '../context/AuthContext';
+import { usePlaylists } from '../context/PlaylistContext';
+import { useToast } from '../context/ToastContext';
 
 interface MainContentProps {
   viewMode: 'home' | 'category' | 'search' | 'playlist' | 'all-songs';
@@ -22,6 +24,10 @@ const MainContent: React.FC<MainContentProps> = ({
   selectedPlaylistName 
 }) => {
   const { user } = useAuth();
+  const { playlists, renamePlaylist, refreshPlaylists } = usePlaylists();
+  const { showToast } = useToast();
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
   const [viewMode, setViewMode] = useState<'home' | 'category' | 'search' | 'playlist' | 'all-songs'>(propViewMode);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categorySongs, setCategorySongs] = useState<Song[]>([]);
@@ -45,6 +51,7 @@ const MainContent: React.FC<MainContentProps> = ({
 
   // Load playlist songs when viewing a playlist
   useEffect(() => {
+    setIsRenaming(false);
     if (viewMode === 'playlist' && selectedPlaylistId) {
       const loadPlaylist = async () => {
         const songs = await getPlaylistSongs(selectedPlaylistId);
@@ -149,6 +156,34 @@ const MainContent: React.FC<MainContentProps> = ({
     }
   };
 
+  // The live name from the playlist list, so a rename shows here and in the sidebar at once
+  const playlistName = playlists.find(p => p.id === selectedPlaylistId)?.name || selectedPlaylistName || 'Playlist';
+
+  const startRename = () => {
+    setRenameValue(playlistName);
+    setIsRenaming(true);
+  };
+
+  const saveRename = async () => {
+    const name = renameValue.trim();
+    setIsRenaming(false);
+    if (!selectedPlaylistId || !name || name === playlistName) return;
+    if (!(await renamePlaylist(selectedPlaylistId, name))) {
+      showToast('Could not rename the playlist', 'error');
+    }
+  };
+
+  const handleRemoveFromPlaylist = async (song: Song) => {
+    if (!selectedPlaylistId) return;
+    if (await removeSongFromPlaylist(selectedPlaylistId, song.id)) {
+      setPlaylistSongs(songs => songs.filter(s => s.id !== song.id));
+      refreshPlaylists(); // song count in the sidebar
+      showToast(`Removed ${song.title} from ${playlistName}`, 'success');
+    } else {
+      showToast('Could not remove the song', 'error');
+    }
+  };
+
   // Playlist Page View
   if (viewMode === 'playlist' && selectedPlaylistId) {
     return (
@@ -173,7 +208,28 @@ const MainContent: React.FC<MainContentProps> = ({
             Back to Home
           </button>
           <div>
-            <h1>{selectedPlaylistName || 'Playlist'}</h1>
+            {isRenaming ? (
+              <input
+                className="playlist-rename-input"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveRename();
+                  if (e.key === 'Escape') setIsRenaming(false);
+                }}
+                onBlur={saveRename}
+                aria-label="Playlist name"
+                maxLength={100}
+                autoFocus
+              />
+            ) : (
+              <div className="playlist-title-row">
+                <h1>{playlistName}</h1>
+                <button type="button" className="playlist-rename-button" onClick={startRename} title="Rename playlist" aria-label="Rename playlist">
+                  <FontAwesomeIcon icon={faPen} />
+                </button>
+              </div>
+            )}
             <p>{playlistSongs.length} song{playlistSongs.length !== 1 ? 's' : ''}</p>
             {playlistSongs.length > 0 && (
               <button
@@ -205,7 +261,12 @@ const MainContent: React.FC<MainContentProps> = ({
           <section className="content-section">
             <div className="card-grid">
               {playlistSongs.map((song) => (
-                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, playlistSongs)} />
+                <SongCard
+                  key={song.id}
+                  song={song}
+                  onPlay={() => handleSongClick(song, playlistSongs)}
+                  onRemove={() => handleRemoveFromPlaylist(song)}
+                />
               ))}
             </div>
           </section>

@@ -40,7 +40,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
   const handleDeletePlaylist = async (playlistId: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this playlist?')) {
-      await deletePlaylist(playlistId);
+      const deleted = await deletePlaylist(playlistId);
+      // Don't stay on the page of a playlist that no longer exists
+      if (deleted && currentView === 'playlist' && playlistId === selectedPlaylistId) {
+        onNavigate('home');
+      }
     }
   };
 
