@@ -8,6 +8,8 @@ import com.example.media_controller_iot.service.PlayerService;
 import com.fazecast.jSerialComm.SerialPort;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -15,7 +17,12 @@ import org.springframework.context.event.EventListener;
 import com.example.media_controller_iot.models.VolumeLog;
 import com.example.media_controller_iot.repository.VolumeLogRepo;
 
+/**
+ * Reads commands from the ESP32 remote over Bluetooth serial. Only useful when the
+ * backend runs on the PC paired with the ESP32; disable with SERIAL_ENABLED=false on AWS.
+ */
 @Component
+@ConditionalOnProperty(name = "serial.enabled", havingValue = "true", matchIfMissing = true)
 public class BluetoothListener {
     private static final Logger log = LoggerFactory.getLogger(BluetoothListener.class);
     private final PlayerService playerService;
@@ -23,6 +30,9 @@ public class BluetoothListener {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final VolumeLogRepo volumeLogRepo;
+
+    @Value("${serial.port:COM6}")
+    private String portName;
 
     public BluetoothListener(PlayerService playerService,
                              PlayerCommandLogRepo playerCommandLogRepo,
@@ -37,19 +47,19 @@ public class BluetoothListener {
     public void startBluetoothListener() {
         SerialPort comPort;
         try {
-            comPort = SerialPort.getCommPort("COM6"); // Change if needed
+            comPort = SerialPort.getCommPort(portName);
             comPort.setBaudRate(115200);
         } catch (Exception e) {
-            log.warn("Serial port COM6 not available (normal in Docker/cloud environments): {}", e.getMessage());
+            log.warn("Serial port {} not available (normal in Docker/cloud environments): {}", portName, e.getMessage());
             return;
         }
 
         if (!comPort.openPort()) {
-            log.warn("Could not open COM6.");
+            log.warn("Could not open serial port {}.", portName);
             return;
         }
 
-        log.info("Listening for Bluetooth data on COM6...");
+        log.info("Listening for Bluetooth data on {}...", portName);
 
         new Thread(() -> {
             StringBuilder buffer = new StringBuilder();

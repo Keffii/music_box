@@ -8,7 +8,6 @@ backend/.settings/
 backend/bin/
 backend/out/
 backend/src/main/resources/application-local.properties
-backend/src/main/resources/application.properties
 backend/MIGRATION_GUIDE.md
 backend/SETUP_CHECKLIST.md
 backend/REACT_CONVERSION_SUMMARY.md

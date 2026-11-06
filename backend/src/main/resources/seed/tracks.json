@@ -1,0 +1,165 @@
+{
+  "_readme": "Songs for the S3 bucket. Upload each MP3 to music/ and its cover to cover/. On startup the backend matches files to these entries by the keywords in match (Pixabay ID first), so both the Pixabay download name and the short name work. Files not listed here are imported too.",
+  "tracks": [
+    {
+      "title": "Better Day",
+      "artist": "penguinmusic",
+      "category": "Electronic",
+      "match": [
+        "186374",
+        "better-day"
+      ],
+      "url": "https://pixabay.com/music/beats-better-day-186374/"
+    },
+    {
+      "title": "Abstract Beauty",
+      "artist": "Grand_Project",
+      "category": "Electronic",
+      "match": [
+        "378257",
+        "abstract-beauty"
+      ],
+      "url": "https://pixabay.com/music/upbeat-abstract-beauty-378257/"
+    },
+    {
+      "title": "Cascade Breathe",
+      "artist": "NverAvetyanMusic",
+      "category": "Electronic",
+      "match": [
+        "412839",
+        "cascade-breathe"
+      ],
+      "url": "https://pixabay.com/music/beats-cascade-breathe-future-garage-412839/"
+    },
+    {
+      "title": "Running Night",
+      "artist": "Alex_MakeMusic",
+      "category": "Electronic",
+      "match": [
+        "393139",
+        "running-night"
+      ],
+      "url": "https://pixabay.com/music/funk-running-night-393139/"
+    },
+    {
+      "title": "Coffee Lofi",
+      "artist": "Lofi_Music_Library",
+      "category": "Lofi",
+      "match": [
+        "458900",
+        "coffee-lofi"
+      ],
+      "url": "https://pixabay.com/music/lofi-coffee-lofi-lofi-music-chill-ambient-458900/"
+    },
+    {
+      "title": "Good Night Lofi",
+      "artist": "FASSounds",
+      "category": "Lofi",
+      "match": [
+        "160166",
+        "good-night-lofi"
+      ],
+      "url": "https://pixabay.com/music/beats-good-night-lofi-cozy-chill-music-160166/"
+    },
+    {
+      "title": "Lofi Study",
+      "artist": "FASSounds",
+      "category": "Lofi",
+      "match": [
+        "112191",
+        "lofi-study"
+      ],
+      "url": "https://pixabay.com/music/beats-lofi-study-calm-peaceful-chill-hop-112191/"
+    },
+    {
+      "title": "Lofi Chill",
+      "artist": "DELOSound",
+      "category": "Lofi",
+      "match": [
+        "456265",
+        "lofi-chill"
+      ],
+      "url": "https://pixabay.com/music/lofi-lofi-lofi-chill-lofi-girl-456265/"
+    },
+    {
+      "title": "Hype Drill Music",
+      "artist": "kontraa",
+      "category": "Hiphop",
+      "match": [
+        "438398",
+        "hype-drill-music"
+      ],
+      "url": "https://pixabay.com/music/trap-hype-drill-music-438398/"
+    },
+    {
+      "title": "Lonewolf Dark Trap",
+      "artist": "onesevenbeatxs",
+      "category": "Hiphop",
+      "match": [
+        "156895",
+        "lonewolf-dark-trap"
+      ],
+      "url": "https://pixabay.com/music/trap-lonewolf-dark-hard-sad-trap-beat-prod-by-onesevenbeatxs-156895/"
+    },
+    {
+      "title": "Hip Hop Beat",
+      "artist": "NastelBom",
+      "category": "Hiphop",
+      "match": [
+        "427992",
+        "hip-hop-beat"
+      ],
+      "url": "https://pixabay.com/music/beats-hiphop-427992/"
+    },
+    {
+      "title": "Energetic Hip Hop",
+      "artist": "Skilsel",
+      "category": "Hiphop",
+      "match": [
+        "8303",
+        "energetic-hip-hop"
+      ],
+      "url": "https://pixabay.com/music/beats-energetic-hip-hop-8303/"
+    },
+    {
+      "title": "Trance Dance Club",
+      "artist": "lNPLUSMUSIC",
+      "category": "Trance",
+      "match": [
+        "409571",
+        "trance-dance-club"
+      ],
+      "url": "https://pixabay.com/music/upbeat-trance-dance-club-music-409571/"
+    },
+    {
+      "title": "Trance",
+      "artist": "Playsound",
+      "category": "Trance",
+      "match": [
+        "123192",
+        "trance"
+      ],
+      "url": "https://pixabay.com/music/techno-trance-trance-123192/"
+    },
+    {
+      "title": "Smart Factory",
+      "artist": "The_Mountain",
+      "category": "Trance",
+      "match": [
+        "137032",
+        "smart-factory"
+      ],
+      "url": "https://pixabay.com/music/dance-trance-137032/"
+    },
+    {
+      "title": "Pure Trance",
+      "artist": "DJDoblina",
+      "category": "Trance",
+      "match": [
+        "459528",
+        "pure-trance"
+      ],
+      "url": "https://pixabay.com/music/electro-pure-trance-459528/"
+    }
+  ]
+}
