@@ -17,6 +17,7 @@ export interface ServerState {
   currentSongId: number;
   isPlaying: boolean;
   lastCommand?: string;
+  commandSeq?: number;
 }
 
 export interface PlayerState {

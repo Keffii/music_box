@@ -145,16 +145,9 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
           </form>
 
           <div className="auth-footer">
-            <a 
-              href="#" 
-              className="auth-link" 
-              onClick={(e) => {
-                e.preventDefault();
-                onSwitchToLogin();
-              }}
-            >
+            <button type="button" className="auth-link" onClick={onSwitchToLogin}>
               Back to Login
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -242,16 +235,9 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
         <div className="auth-footer">
           Already have an account?{' '}
-          <a 
-            href="#" 
-            className="auth-link" 
-            onClick={(e) => {
-              e.preventDefault();
-              onSwitchToLogin();
-            }}
-          >
+          <button type="button" className="auth-link" onClick={onSwitchToLogin}>
             Sign In
-          </a>
+          </button>
         </div>
       </div>
     </div>
