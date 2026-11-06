@@ -30,8 +30,9 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long');
+    // Same rules as the Cognito user pool, so people see a clear message instead of Cognito's
+    if (password.length < 8 || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      setError('Password needs at least 8 characters, including a lowercase letter and a number');
       return;
     }
 
@@ -160,7 +161,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
         <div className="auth-header">
           <FontAwesomeIcon icon={faMusic} className="auth-logo" />
           <h1 className="auth-title">Create Account</h1>
-          <p className="auth-subtitle">Join MusicBox today</p>
+          <p className="auth-subtitle">Join Music Box today</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSignup}>
@@ -201,7 +202,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
               id="password"
               type="password"
               className="form-input"
-              placeholder="Create a password (min 8 characters)"
+              placeholder="8+ characters, a lowercase letter and a number"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

@@ -37,7 +37,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <img src={logo} alt="MusicBox Logo" className="auth-logo-login"/>
+          <img src={logo} alt="Music Box logo" className="auth-logo-login"/>
           <h1 className="auth-title">Welcome to Music Box</h1>
           <p className="auth-subtitle">Sign in to continue</p>
         </div>
@@ -46,7 +46,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
           {error && <div className="form-error">{error}</div>}
           
           <div className="form-group">
-            <label className="form-label" htmlFor="username">Email or Username</label>
+            <label className="form-label" htmlFor="username">Username</label>
             <input
               id="username"
               type="text"

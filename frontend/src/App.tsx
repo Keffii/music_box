@@ -62,6 +62,7 @@ const AppContent: React.FC = () => {
                 onNavigate={handleNavigate} 
                 currentView={mainView} 
                 onPlaylistClick={handlePlaylistClick}
+                selectedPlaylistId={selectedPlaylistId}
               />
               <MainContent 
                 viewMode={mainView} 
