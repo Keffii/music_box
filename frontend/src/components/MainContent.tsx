@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './MainContent.css';
 import { loadSongsByCategory, getRecentlyPlayed, searchSongs, getPlaylistSongs, setPlaylistQueue, playSpecificSong, loadSongs } from '../services/playerService';
 import { Song } from '../types/music.types';
-import { DEFAULT_COVER } from '../utils/constants';
+import { SongCard } from './SongCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faCompass, faPlay, faMusic } from '@fortawesome/free-solid-svg-icons';
 import { faClock } from '@fortawesome/free-regular-svg-icons';
@@ -31,7 +31,6 @@ const MainContent: React.FC<MainContentProps> = ({
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [playlistSongs, setPlaylistSongs] = useState<Song[]>([]);
   const [allSongs, setAllSongs] = useState<Song[]>([]);
-  const [hoveredCardId, setHoveredCardId] = useState<number | null>(null);
 
   // Load recently played songs
   const loadRecentlyPlayed = async () => {
@@ -100,6 +99,8 @@ const MainContent: React.FC<MainContentProps> = ({
   const handleCategoryClick = async (category: string) => {
     setSelectedCategory(category);
     setViewMode('category');
+    // Tell App too, so clicking Home in the sidebar is a real change and switches back
+    onNavigate('category');
     const songs = await loadSongsByCategory(category);
     setCategorySongs(songs);
     console.log(`${category} songs:`, songs);
@@ -204,49 +205,7 @@ const MainContent: React.FC<MainContentProps> = ({
           <section className="content-section">
             <div className="card-grid">
               {playlistSongs.map((song) => (
-                <div 
-                  key={song.id} 
-                  className="music-card"
-                  onMouseEnter={() => setHoveredCardId(song.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                  style={{ position: 'relative', cursor: 'pointer' }}
-                >
-                  <div className="card-image" onClick={() => handleSongClick(song, playlistSongs)}>
-                    <img src={song.coverUrl || DEFAULT_COVER} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {(
-                      <div className={`hover-overlay${hoveredCardId === song.id ? ' visible' : ''}`} style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(0, 0, 0, 0.6)',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          borderRadius: '50%',
-                          background: 'hotpink',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(255, 105, 180, 0.5)',
-                          transform: 'translateY(-50%)'
-                        }}>
-                          <FontAwesomeIcon icon={faPlay} style={{ fontSize: '20px', marginLeft: '3px' }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="card-info">
-                    <h3>{song.title}</h3>
-                    <p>{song.artist}</p>
-                  </div>
-                </div>
+                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, playlistSongs)} />
               ))}
             </div>
           </section>
@@ -317,49 +276,7 @@ const MainContent: React.FC<MainContentProps> = ({
           ) : searchResults.length > 0 ? (
             <div className="card-grid">
               {searchResults.map((song) => (
-                <div 
-                  key={song.id} 
-                  className="music-card"
-                  onMouseEnter={() => setHoveredCardId(song.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                  style={{ position: 'relative', cursor: 'pointer' }}
-                >
-                  <div className="card-image" onClick={() => handleSongClick(song, searchResults)}>
-                    <img src={song.coverUrl || DEFAULT_COVER} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {(
-                      <div className={`hover-overlay${hoveredCardId === song.id ? ' visible' : ''}`} style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(0, 0, 0, 0.6)',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          borderRadius: '50%',
-                          background: 'hotpink',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(255, 105, 180, 0.5)',
-                          transform: 'translateY(-50%)'
-                        }}>
-                          <FontAwesomeIcon icon={faPlay} style={{ fontSize: '20px', marginLeft: '3px' }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="card-info">
-                    <h3>{song.title}</h3>
-                    <p>{song.artist}</p>
-                  </div>
-                </div>
+                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, searchResults)} />
               ))}
             </div>
           ) : (
@@ -401,49 +318,7 @@ const MainContent: React.FC<MainContentProps> = ({
           <section className="content-section">
             <div className="card-grid">
               {categorySongs.map((song) => (
-                <div 
-                  key={song.id} 
-                  className="music-card"
-                  onMouseEnter={() => setHoveredCardId(song.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                  style={{ position: 'relative', cursor: 'pointer' }}
-                >
-                  <div className="card-image" onClick={() => handleSongClick(song, categorySongs)}>
-                    <img src={song.coverUrl || DEFAULT_COVER} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {(
-                      <div className={`hover-overlay${hoveredCardId === song.id ? ' visible' : ''}`} style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(0, 0, 0, 0.6)',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          borderRadius: '50%',
-                          background: 'hotpink',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(255, 105, 180, 0.5)',
-                          transform: 'translateY(-50%)'
-                        }}>
-                          <FontAwesomeIcon icon={faPlay} style={{ fontSize: '20px', marginLeft: '3px' }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="card-info">
-                    <h3>{song.title}</h3>
-                    <p>{song.artist}</p>
-                  </div>
-                </div>
+                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, categorySongs)} />
               ))}
             </div>
           </section>
@@ -487,49 +362,7 @@ const MainContent: React.FC<MainContentProps> = ({
           <section className="content-section">
             <div className="card-grid">
               {allSongs.map((song) => (
-                <div 
-                  key={song.id} 
-                  className="music-card"
-                  onMouseEnter={() => setHoveredCardId(song.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                  style={{ position: 'relative', cursor: 'pointer' }}
-                >
-                  <div className="card-image" onClick={() => handleSongClick(song, allSongs)}>
-                    <img src={song.coverUrl || DEFAULT_COVER} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {(
-                      <div className={`hover-overlay${hoveredCardId === song.id ? ' visible' : ''}`} style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(0, 0, 0, 0.6)',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          borderRadius: '50%',
-                          background: 'hotpink',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(255, 105, 180, 0.5)',
-                          transform: 'translateY(-50%)'
-                        }}>
-                          <FontAwesomeIcon icon={faPlay} style={{ fontSize: '20px', marginLeft: '3px' }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="card-info">
-                    <h3>{song.title}</h3>
-                    <p>{song.artist}</p>
-                  </div>
-                </div>
+                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, allSongs)} />
               ))}
             </div>
           </section>
@@ -558,49 +391,7 @@ const MainContent: React.FC<MainContentProps> = ({
         {recentlyPlayed.length > 0 ? (
           <div className="card-grid">
             {recentlyPlayed.map((song) => (
-              <div 
-                key={song.id} 
-                className="music-card"
-                onMouseEnter={() => setHoveredCardId(song.id)}
-                onMouseLeave={() => setHoveredCardId(null)}
-                style={{ position: 'relative', cursor: 'pointer' }}
-              >
-                <div className="card-image" onClick={() => handleSongClick(song, recentlyPlayed)}>
-                  <img src={song.coverUrl || DEFAULT_COVER} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                  {(
-                    <div className={`hover-overlay${hoveredCardId === song.id ? ' visible' : ''}`} style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'rgba(0, 0, 0, 0.6)',
-                      borderRadius: '8px'
-                    }}>
-                      <div style={{
-                        width: '50px',
-                        height: '50px',
-                        borderRadius: '50%',
-                        background: 'hotpink',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 4px 12px rgba(255, 105, 180, 0.5)',
-                        transform: 'translateY(-50%)'
-                      }}>
-                        <FontAwesomeIcon icon={faPlay} style={{ fontSize: '20px', marginLeft: '3px' }} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="card-info">
-                  <h3>{song.title}</h3>
-                  <p>{song.artist}</p>
-                </div>
-              </div>
+              <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, recentlyPlayed)} />
             ))}
           </div>
         ) : (

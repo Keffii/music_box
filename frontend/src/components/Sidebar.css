@@ -64,6 +64,15 @@
   color: var(--primary);
 }
 
+/* The playlist that is open in the main view */
+.playlist-item.active {
+  background-color: var(--sidebar-accent);
+}
+
+.playlist-item.active .playlist-name {
+  color: var(--primary);
+}
+
 .nav-item i {
   font-size: 20px;
   width: 20px;

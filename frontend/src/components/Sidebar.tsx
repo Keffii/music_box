@@ -13,9 +13,10 @@ interface SidebarProps {
   onNavigate: (view: 'home' | 'category' | 'search' | 'playlist' | 'all-songs') => void;
   currentView: 'home' | 'category' | 'search' | 'playlist' | 'all-songs';
   onPlaylistClick?: (playlistId: number, playlistName: string) => void;
+  selectedPlaylistId?: number | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistClick }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistClick, selectedPlaylistId }) => {
   const { favorites } = useFavorites();
   const { playlists, createPlaylist, deletePlaylist } = usePlaylists();
   const { user, signOut } = useAuth();
@@ -48,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <img src={logo} alt="MusicBox Logo" className="sidebar-logo"/>
+        <img src={logo} alt="Music Box logo" className="sidebar-logo"/>
         <h1>Music Box</h1>
       </div>
 
@@ -112,9 +113,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
             </li>
           ) : (
             playlists.map(playlist => (
-              <li 
-                key={playlist.id} 
-                className="playlist-item" 
+              <li
+                key={playlist.id}
+                className={`playlist-item${currentView === 'playlist' && playlist.id === selectedPlaylistId ? ' active' : ''}`}
                 style={{ position: 'relative', cursor: 'pointer' }}
                 onClick={() => {
                   if (onPlaylistClick) {
@@ -125,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
                 <FontAwesomeIcon icon={faMusic} />
                 <div style={{ flex: 1 }}>
                   <div className="playlist-name">{playlist.name}</div>
-                  <div className="playlist-count">{playlist.songCount} songs</div>
+                  <div className="playlist-count">{playlist.songCount} song{playlist.songCount !== 1 ? 's' : ''}</div>
                 </div>
                 <FontAwesomeIcon 
                   icon={faTrash} 

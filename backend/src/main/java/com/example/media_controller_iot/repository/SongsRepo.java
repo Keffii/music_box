@@ -12,6 +12,8 @@ import java.util.List;
 public interface SongsRepo extends JpaRepository<Songs, Long> {
     List<Songs> findByCategory(String category);
     
-    @Query("SELECT s FROM Songs s WHERE LOWER(s.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(s.artist) LIKE LOWER(CONCAT('%', :query, '%'))")
-    List<Songs> searchByTitleOrArtist(@Param("query") String query);
+    @Query("SELECT s FROM Songs s WHERE LOWER(s.title) LIKE LOWER(CONCAT('%', :query, '%')) " +
+           "OR LOWER(s.artist) LIKE LOWER(CONCAT('%', :query, '%')) " +
+           "OR LOWER(s.category) LIKE LOWER(CONCAT('%', :query, '%'))")
+    List<Songs> searchByTitleArtistOrCategory(@Param("query") String query);
 }

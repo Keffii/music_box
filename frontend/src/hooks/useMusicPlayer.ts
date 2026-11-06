@@ -23,32 +23,9 @@ export const useMusicPlayer = () => {
   const volumeUpdateTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSongIdRef = useRef<number | null>(null);
   const lastCommandSeqRef = useRef<number | null>(null);
-
-  // Load songs
-  const loadSongs = useCallback(async () => {
-    const data = await fetchSongs();
-    setSongs(data);
-    songsRef.current = data;
-    console.log('Songs loaded:', data);
-    
-    // Set the first song immediately on load
-    if (data && data.length > 0) {
-      const firstSong = data[0];
-      setCurrentSong(firstSong);
-      setSongTitle(firstSong.title || 'Song Name');
-      setSongArtist(firstSong.artist || 'Artist Name');
-      
-      // Set cover URL with backend base
-      if (firstSong.coverUrl) {
-        const fullCoverUrl = firstSong.coverUrl.startsWith('http') 
-          ? firstSong.coverUrl 
-          : `${API_BASE}${firstSong.coverUrl}`;
-        setCoverUrl(fullCoverUrl);
-      } else {
-        setCoverUrl(DEFAULT_COVER);
-      }
-    }
-  }, []);
+  // Latest state from the server. The first one usually arrives before the song list,
+  // so loadSongs() applies it again once the songs are known.
+  const lastServerStateRef = useRef<ServerState | null>(null);
 
   // Safe play function
   const safePlay = useCallback(() => {
@@ -59,8 +36,8 @@ export const useMusicPlayer = () => {
 
   // Update state from server
   const updateStateFromServer = useCallback((data: ServerState) => {
-    console.log('Server state update:', data);
-    
+    lastServerStateRef.current = data;
+
     setSongTitle(data.title);
     setSongArtist(data.artist);
     setShuffleEnabled(data.shuffle);
@@ -144,6 +121,32 @@ export const useMusicPlayer = () => {
         : target;
     }
   }, [safePlay]);
+
+  // Load songs, then show the server's current song (or the first one) with its audio
+  // loaded, so the player shows the song's length before anyone presses play
+  const loadSongs = useCallback(async () => {
+    const data = await fetchSongs();
+    setSongs(data);
+    songsRef.current = data;
+
+    if (lastServerStateRef.current) {
+      updateStateFromServer(lastServerStateRef.current);
+      return;
+    }
+    if (data && data.length > 0) {
+      const firstSong = data[0];
+      setCurrentSong(firstSong);
+      setSongTitle(firstSong.title || 'Song Name');
+      setSongArtist(firstSong.artist || 'Artist Name');
+      setCoverUrl(firstSong.coverUrl
+        ? (firstSong.coverUrl.startsWith('http') ? firstSong.coverUrl : `${API_BASE}${firstSong.coverUrl}`)
+        : DEFAULT_COVER);
+      if (audioRef.current && !audioRef.current.src && firstSong.srcUrl) {
+        // preload="metadata": fetches just enough to know the duration
+        audioRef.current.src = firstSong.srcUrl.startsWith('http') ? firstSong.srcUrl : `${API_BASE}${firstSong.srcUrl}`;
+      }
+    }
+  }, [updateStateFromServer]);
 
   // SSE Connection
   const connectSSE = useCallback(() => {
