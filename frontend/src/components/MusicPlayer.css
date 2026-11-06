@@ -175,6 +175,10 @@
 }
 
 .player-volume-icon {
+  background: none;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
   color: var(--muted-foreground);
   cursor: pointer;
   transition: color 0.2s ease;
