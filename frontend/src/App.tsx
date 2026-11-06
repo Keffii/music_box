@@ -48,6 +48,12 @@ const AppContent: React.FC = () => {
     if (view === 'home' || view === 'search' || view === 'all-songs') navigate({ view });
   };
 
+  // The / shortcut: go to search and put the cursor in the box
+  const openSearch = () => {
+    if (route.view !== 'search') navigate({ view: 'search' });
+    setTimeout(() => document.querySelector<HTMLInputElement>('.search-input')?.focus(), 0);
+  };
+
   const handlePlaylistClick = (playlistId: number) => {
     setMenuOpen(false);
     navigate({ view: 'playlist', id: playlistId });
@@ -105,7 +111,7 @@ const AppContent: React.FC = () => {
               />
               <MainContent route={route} navigate={navigate} />
             </div>
-            <MusicPlayer />
+            <MusicPlayer onOpenSearch={openSearch} />
           </div>
         </PlaylistProvider>
       </FavoritesProvider>
