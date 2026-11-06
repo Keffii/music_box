@@ -99,9 +99,10 @@ cd backend
 Pick names first. The bucket name must be globally unique, e.g. `music-box-kevin-2026`.
 
 ### 2.1 Budget alert
-Edit `infra/aws/budget-notifications.json` (your email), then:
+Copy `infra/aws/budget-notifications.json` to `budget-notifications.local.json` and put your email
+in the copy (`*.local.json` files are git-ignored; the steps below use the same pattern), then:
 ```
-aws budgets create-budget --account-id ACCOUNT_ID --budget file://infra/aws/budget.json --notifications-with-subscribers file://infra/aws/budget-notifications.json
+aws budgets create-budget --account-id ACCOUNT_ID --budget file://infra/aws/budget.json --notifications-with-subscribers file://infra/aws/budget-notifications.local.json
 ```
 It emails you at 80% of $40 and when the month is forecast to exceed $40.
 
@@ -109,11 +110,12 @@ It emails you at 80% of $40 and when the month is forecast to exceed $40.
 ```
 aws s3api create-bucket --bucket BUCKET_NAME --create-bucket-configuration LocationConstraint=eu-north-1
 aws s3api put-public-access-block --bucket BUCKET_NAME --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=false,RestrictPublicBuckets=false
-aws s3api put-bucket-policy --bucket BUCKET_NAME --policy file://infra/aws/s3-bucket-policy.json
+aws s3api put-bucket-policy --bucket BUCKET_NAME --policy file://infra/aws/s3-bucket-policy.local.json
 aws s3 sync upload/music s3://BUCKET_NAME/music/
 aws s3 sync upload/cover s3://BUCKET_NAME/cover/
 ```
-Only `music/*` and `cover/*` are public. Replace `BUCKET_NAME` in `s3-bucket-policy.json` first.
+Only `music/*` and `cover/*` are public. First copy `s3-bucket-policy.json` to
+`s3-bucket-policy.local.json` and replace `BUCKET_NAME` in the copy.
 
 ### 2.3 Cognito user pool
 ```
@@ -133,15 +135,25 @@ aws rds describe-db-instances --db-instance-identifier music-box-db --query "DBI
 Note the endpoint and the security group ID.
 
 ### 2.5 IAM role for the backend server
-Replace `BUCKET_NAME` in `eb-s3-access-policy.json`, then:
+Copy `eb-s3-access-policy.json` to `eb-s3-access-policy.local.json` and replace `BUCKET_NAME`
+in the copy, then:
 ```
 aws iam create-role --role-name music-box-eb-ec2 --assume-role-policy-document file://infra/aws/eb-ec2-trust-policy.json
 aws iam attach-role-policy --role-name music-box-eb-ec2 --policy-arn arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier
-aws iam put-role-policy --role-name music-box-eb-ec2 --policy-name music-box-s3 --policy-document file://infra/aws/eb-s3-access-policy.json
+aws iam put-role-policy --role-name music-box-eb-ec2 --policy-name music-box-s3 --policy-document file://infra/aws/eb-s3-access-policy.local.json
 aws iam create-instance-profile --instance-profile-name music-box-eb-ec2
 aws iam add-role-to-instance-profile --instance-profile-name music-box-eb-ec2 --role-name music-box-eb-ec2
 ```
 The backend uses this role for S3, so no access keys are stored on the server.
+
+A new account also has no Elastic Beanstalk **service role** (the console creates it, the CLI
+doesn't), and `eb-options.json` refers to it:
+```
+aws iam create-role --role-name aws-elasticbeanstalk-service-role --assume-role-policy-document file://infra/aws/eb-service-trust-policy.json
+aws iam attach-role-policy --role-name aws-elasticbeanstalk-service-role --policy-arn arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth
+aws iam attach-role-policy --role-name aws-elasticbeanstalk-service-role --policy-arn arn:aws:iam::aws:policy/AWSElasticBeanstalkManagedUpdatesCustomerRolePolicy
+```
+Skip this if `aws iam get-role --role-name aws-elasticbeanstalk-service-role` already finds it.
 
 ### 2.6 Elastic Beanstalk (backend)
 Copy `infra/aws/eb-options.json` to `infra/aws/eb-options.local.json` and fill in the
@@ -157,7 +169,10 @@ aws elasticbeanstalk list-available-solution-stacks --query "SolutionStacks[?con
 aws elasticbeanstalk create-environment --application-name music-box --environment-name music-box-api --version-label v1 --solution-stack-name "STACK_NAME_FROM_ABOVE" --option-settings file://infra/aws/eb-options.local.json
 aws elasticbeanstalk describe-environments --environment-names music-box-api --query "Environments[0].[Status,Health,CNAME]"
 ```
-`create-storage-location` prints the `EB_STORAGE_BUCKET` name. Wait until the status is `Ready`
+`create-storage-location` prints the `EB_STORAGE_BUCKET` name
+(`elasticbeanstalk-eu-north-1-ACCOUNT_ID`). Pick the stack that is just "running Corretto 21",
+not a Tomcat one: the jar runs on its own (in November 2026 that was
+`64bit Amazon Linux 2023 v4.14.1 running Corretto 21`). Wait until the status is `Ready`
 (about 5–10 minutes) and note the CNAME (`music-box-api.eu-north-1.elasticbeanstalk.com`).
 
 **Let the server reach the database:** find the security group Elastic Beanstalk created
@@ -171,12 +186,17 @@ Check: `http://EB_CNAME/actuator/health` shows `{"status":"UP"}`, and
 `http://EB_CNAME/api/player/state` shows a song title once the seed step has run.
 
 ### 2.7 CloudFront (HTTPS for the backend)
-Look up the two managed policy IDs, put them and the EB CNAME into
-`infra/aws/cloudfront-backend.json`, then create the distribution:
+`infra/aws/cloudfront-backend.json` already holds the IDs of the two AWS-managed policies
+(`Managed-CachingDisabled` and `Managed-AllViewerExceptHostHeader`; they are the same in every
+account). Copy it to `cloudfront-backend.local.json`, replace `EB_CNAME` there, then create the
+distribution:
+```
+aws cloudfront create-distribution --distribution-config file://infra/aws/cloudfront-backend.local.json --query "Distribution.[Id,DomainName]"
+```
+To re-check the policy IDs:
 ```
 aws cloudfront list-cache-policies --type managed --query "CachePolicyList.Items[?CachePolicy.CachePolicyConfig.Name=='Managed-CachingDisabled'].CachePolicy.Id"
 aws cloudfront list-origin-request-policies --type managed --query "OriginRequestPolicyList.Items[?OriginRequestPolicy.OriginRequestPolicyConfig.Name=='Managed-AllViewerExceptHostHeader'].OriginRequestPolicy.Id"
-aws cloudfront create-distribution --distribution-config file://infra/aws/cloudfront-backend.json --query "Distribution.DomainName"
 ```
 Caching is off and all headers (including `Authorization`) are forwarded, so the API works as if
 called directly. It takes a few minutes to deploy. Check `https://xxxx.cloudfront.net/actuator/health`.
