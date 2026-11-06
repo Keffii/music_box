@@ -647,6 +647,7 @@
 .browse-tile-text {
   position: relative;
   z-index: 1;
+  margin-top: auto; /* stays at the bottom, with or without an icon above */
   display: flex;
   flex-direction: column;
   min-width: 0;

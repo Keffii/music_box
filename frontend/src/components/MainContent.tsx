@@ -242,7 +242,7 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
   } else if (route.view === 'category') {
     content = (
       <>
-        <PageHero hue={genre?.hue ?? LIBRARY_HUE} icon={genre?.icon ?? faMusic} eyebrow="Genre"
+        <PageHero hue={genre?.hue ?? LIBRARY_HUE} eyebrow="Genre"
           title={genre?.label || route.genre} subtitle={subtitle(genre?.tagline)} covers={pageSongs}
           onBack={goHome} onPlayAll={pageSongs.length > 0 ? handlePlayAll : undefined} />
         {songGrid('No songs found in this genre')}
@@ -353,7 +353,6 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
                   key={g.name}
                   title={g.label}
                   subtitle={library.length > 0 ? countLabel(songs.length) : g.tagline}
-                  icon={g.icon}
                   hue={g.hue}
                   covers={pickCovers(songs, 3)}
                   onClick={() => navigate({ view: 'category', genre: g.name })}
