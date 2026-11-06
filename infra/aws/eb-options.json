@@ -1,5 +1,6 @@
 [
   { "Namespace": "aws:elasticbeanstalk:environment", "OptionName": "EnvironmentType", "Value": "SingleInstance" },
+  { "Namespace": "aws:elasticbeanstalk:environment", "OptionName": "ServiceRole", "Value": "aws-elasticbeanstalk-service-role" },
   { "Namespace": "aws:autoscaling:launchconfiguration", "OptionName": "IamInstanceProfile", "Value": "music-box-eb-ec2" },
   { "Namespace": "aws:ec2:instances", "OptionName": "InstanceTypes", "Value": "t4g.small" },
   { "Namespace": "aws:elasticbeanstalk:healthreporting:system", "OptionName": "SystemType", "Value": "basic" },
