@@ -1,0 +1,18 @@
+[
+  { "Namespace": "aws:elasticbeanstalk:environment", "OptionName": "EnvironmentType", "Value": "SingleInstance" },
+  { "Namespace": "aws:autoscaling:launchconfiguration", "OptionName": "IamInstanceProfile", "Value": "music-box-eb-ec2" },
+  { "Namespace": "aws:ec2:instances", "OptionName": "InstanceTypes", "Value": "t4g.small" },
+  { "Namespace": "aws:elasticbeanstalk:healthreporting:system", "OptionName": "SystemType", "Value": "basic" },
+
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "SERVER_PORT", "Value": "5000" },
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "SERIAL_ENABLED", "Value": "false" },
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "AWS_REGION", "Value": "REGION" },
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "AWS_S3_BUCKET", "Value": "BUCKET_NAME" },
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "AWS_COGNITO_REGION", "Value": "REGION" },
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "AWS_COGNITO_USER_POOL_ID", "Value": "USER_POOL_ID" },
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "AWS_COGNITO_APP_CLIENT_ID", "Value": "APP_CLIENT_ID" },
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "SPRING_DATASOURCE_URL", "Value": "jdbc:mysql://RDS_ENDPOINT:3306/music_box?serverTimezone=UTC" },
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "SPRING_DATASOURCE_USERNAME", "Value": "admin" },
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "SPRING_DATASOURCE_PASSWORD", "Value": "DB_PASSWORD" },
+  { "Namespace": "aws:elasticbeanstalk:application:environment", "OptionName": "CORS_ALLOWED_ORIGINS", "Value": "https://*.amplifyapp.com" }
+]

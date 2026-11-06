@@ -54,3 +54,8 @@ frontend/STRUCTURE.md
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+# Music files staged for upload to S3 (see docs/DEPLOY_AWS.md)
+upload/
+# Filled-in copies with real values (e.g. the database password)
+infra/aws/*.local.json
