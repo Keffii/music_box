@@ -1,6 +1,7 @@
 package com.example.media_controller_iot.controller;
 
 import com.example.media_controller_iot.service.PlayerService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -40,7 +41,11 @@ public class PlayerController {
     }
 
     @GetMapping("/stream")
-    public SseEmitter stream() {
+    public SseEmitter stream(HttpServletResponse response) {
+        // Stop nginx (Elastic Beanstalk) from buffering the stream, and any cache from storing it
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
         playerService.addEmitter(emitter);
 
@@ -51,6 +56,7 @@ public class PlayerController {
 
         emitter.onCompletion(() -> playerService.removeEmitter(emitter));
         emitter.onTimeout(() -> playerService.removeEmitter(emitter));
+        emitter.onError(e -> playerService.removeEmitter(emitter));
 
         return emitter;
     }

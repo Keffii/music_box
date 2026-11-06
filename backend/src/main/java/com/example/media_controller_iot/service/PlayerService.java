@@ -7,6 +7,7 @@ import com.example.media_controller_iot.repository.PlayerCommandLogRepo;
 import com.example.media_controller_iot.repository.SongsRepo;
 import com.example.media_controller_iot.repository.VolumeLogRepo;
 import org.springframework.lang.NonNull;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -35,6 +36,8 @@ public class PlayerService {
     private boolean wasPlayingBeforeMute = false;
     private int volume = 50;
     private String lastCommand = "NONE";
+    // Increments on every command, so the browser can tell a new SEEK_FORWARD from a replayed state
+    private long commandSeq = 0;
 
     private Songs currentSong;
 
@@ -44,7 +47,24 @@ public class PlayerService {
         this.songsRepo = songsRepo;
         this.playerCommandLogRepo = playerCommandLogRepo;
         this.volumeLogRepo = volumeLogRepo;
-        loadInitialSong();
+    }
+
+    /** Called after the song library is seeded, so the player starts on a real song. */
+    public synchronized void reloadLibrary() {
+        if (currentSong == null || !songsRepo.existsById(currentSong.getId())) {
+            currentSong = null;
+            loadInitialSong();
+        }
+        broadcastState();
+    }
+
+    /** Position of the current song by ID (entity equals() breaks when metadata changes). */
+    private int indexOfCurrent(List<Songs> songs) {
+        if (currentSong == null) return -1;
+        for (int i = 0; i < songs.size(); i++) {
+            if (Objects.equals(songs.get(i).getId(), currentSong.getId())) return i;
+        }
+        return -1;
     }
 
     private void loadInitialSong() {
@@ -54,10 +74,26 @@ public class PlayerService {
         }
     }
 
-    public void addEmitter(SseEmitter emitter) { emitters.add(emitter); }
-    public void removeEmitter(SseEmitter emitter) { emitters.remove(emitter); }
+    public synchronized void addEmitter(SseEmitter emitter) { emitters.add(emitter); }
+    public synchronized void removeEmitter(SseEmitter emitter) { emitters.remove(emitter); }
 
-    private void broadcastState() {
+    /**
+     * Sends an SSE comment to every client every 15 s. Without it, idle streams are
+     * cut by Elastic Beanstalk's nginx (60 s) and CloudFront (30 s by default).
+     */
+    @Scheduled(fixedRate = 15000)
+    public synchronized void heartbeat() {
+        emitters.removeIf(emitter -> {
+            try {
+                emitter.send(SseEmitter.event().comment("ping"));
+                return false;
+            } catch (Exception e) {
+                return true;
+            }
+        });
+    }
+
+    private synchronized void broadcastState() {
         Map<String, Object> state = getState();
         emitters.removeIf(emitter -> {
             try {
@@ -110,10 +146,10 @@ public class PlayerService {
             Songs newSong;
             do {
                 newSong = songs.get(r.nextInt(songs.size()));
-            } while (newSong.equals(currentSong));
+            } while (currentSong != null && Objects.equals(newSong.getId(), currentSong.getId()) && songs.size() > 1);
             currentSong = newSong;
         } else {
-            int idx = songs.indexOf(currentSong);
+            int idx = indexOfCurrent(songs);
             currentSong = songs.get((idx + 1) % songs.size());
         }
 
@@ -134,7 +170,7 @@ public class PlayerService {
         List<Songs> songs = songsRepo.findAll();
         if (songs.isEmpty()) return;
 
-        int index = songs.indexOf(currentSong);
+        int index = indexOfCurrent(songs);
         currentSong = songs.get((index - 1 + songs.size()) % songs.size());
         playbackPosition = 0;
     }
@@ -168,7 +204,10 @@ public class PlayerService {
         mediaCommands(cmd, null);
     }
 
-    public void mediaCommands(String cmd, String userId) {
+    public synchronized void mediaCommands(String cmd, String userId) {
+        if (cmd == null || cmd.isBlank()) return;
+        if (currentSong == null) loadInitialSong();
+
         switch (cmd) {
             case "PLAY" -> isPlaying = true;
             case "PAUSE" -> isPlaying = false;
@@ -185,11 +224,12 @@ public class PlayerService {
         }
 
         lastCommand = cmd;
+        commandSeq++;
         playerCommandLogRepo.save(new PlayerCommandLog(cmd, currentSong, userId));
         broadcastState();
     }
 
-    public void setPlaylistQueue(List<Long> songIds, String userId) {
+    public synchronized void setPlaylistQueue(List<Long> songIds, String userId) {
         if (songIds == null || songIds.isEmpty()) {
             // Clear playlist queue
             playlistQueue.clear();
@@ -204,6 +244,7 @@ public class PlayerService {
                 isPlaying = true;
                 // Log the command so it appears in recently played
                 lastCommand = "PLAY";
+                commandSeq++;
                 playerCommandLogRepo.save(new PlayerCommandLog("PLAY", song, userId));
             });
             playbackPosition = 0;
@@ -211,24 +252,26 @@ public class PlayerService {
         broadcastState();
     }
 
-    @SuppressWarnings("null")
-    public @NonNull Map<String, Object> getState() {
+    public synchronized @NonNull Map<String, Object> getState() {
         if (currentSong == null) loadInitialSong();
+        boolean hasSong = currentSong != null;
 
-        return Map.ofEntries(
-                Map.entry("isPlaying", isPlaying),
-                Map.entry("currentSongId", currentSong.getId()),
-                Map.entry("title", currentSong.getTitle()),
-                Map.entry("artist", currentSong.getArtist()),
-                Map.entry("srcUrl", currentSong.getSrcUrl()),
-                Map.entry("coverUrl", currentSong.getCoverUrl()),
-                Map.entry("volume", volume),
-                Map.entry("isMuted", isMuted),
-                Map.entry("lastCommand", lastCommand),
-                Map.entry("shuffle", shuffleEnabled),
-                Map.entry("repeat", repeatEnabled),
-                Map.entry("position", playbackPosition),
-                Map.entry("duration", 0)
-        );
+        // HashMap, not Map.of: values are null while the library is still empty
+        Map<String, Object> state = new HashMap<>();
+        state.put("isPlaying", isPlaying);
+        state.put("currentSongId", hasSong ? currentSong.getId() : null);
+        state.put("title", hasSong ? currentSong.getTitle() : "No songs yet");
+        state.put("artist", hasSong ? currentSong.getArtist() : "Upload music to the S3 bucket");
+        state.put("srcUrl", hasSong ? currentSong.getSrcUrl() : null);
+        state.put("coverUrl", hasSong ? currentSong.getCoverUrl() : null);
+        state.put("volume", volume);
+        state.put("isMuted", isMuted);
+        state.put("lastCommand", lastCommand);
+        state.put("commandSeq", commandSeq);
+        state.put("shuffle", shuffleEnabled);
+        state.put("repeat", repeatEnabled);
+        state.put("position", playbackPosition);
+        state.put("duration", 0);
+        return state;
     }
 }
