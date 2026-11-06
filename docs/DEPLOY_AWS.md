@@ -228,6 +228,15 @@ The GitHub connection needs a browser sign-in, so this part is done in the conso
    ```
    aws elasticbeanstalk update-environment --environment-name music-box-api --option-settings Namespace=aws:elasticbeanstalk:application:environment,OptionName=CORS_ALLOWED_ORIGINS,Value=https://aws-redeploy.d1abc2def3.amplifyapp.com
    ```
+6. Put the site URL in the link-preview tags in `frontend/public/index.html` (`og:url`,
+   `og:image`, `twitter:image`). Preview images need a full URL, so change these again if
+   you move to a custom domain.
+
+Pages have their own addresses (`/library`, `/genre/lofi`, `/playlist/3`, `/search?q=...`).
+New Amplify apps already have the rewrite rule that serves `index.html` for these
+(**Hosting → Rewrites and redirects**). If a page link gives a 404, add a rewrite from
+`</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>` to
+`/index.html` with type **200 (Rewrite)**.
 
 ---
 
@@ -237,6 +246,8 @@ The GitHub connection needs a browser sign-in, so this part is done in the conso
 - [ ] Songs appear in their categories with covers; play, pause, next, volume and seek work.
 - [ ] Favorites and playlists save and survive a page reload.
 - [ ] Open the site in a second browser: pressing play in one updates the other (live sync).
+- [ ] Open a genre, then press the browser's Back button: you're on the home page again.
+      Reloading `/genre/lofi` opens that genre directly.
 - [ ] Put the link in the README's **Website** section.
 
 ## Updating the backend later
