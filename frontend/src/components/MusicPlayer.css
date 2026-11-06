@@ -169,6 +169,36 @@
   max-width: 300px;
 }
 
+/* Opens the keyboard shortcuts list. Hidden on touch screens, which have no keyboard. */
+.player-shortcuts-button {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.player-shortcuts-button:hover,
+.player-shortcuts-button:focus-visible {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+@media (hover: none) {
+  .player-shortcuts-button {
+    display: none;
+  }
+}
+
 .player-volume-container {
   display: flex;
   align-items: center;

@@ -129,6 +129,7 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
   }, [route, genre, playlist]);
 
   const goHome = () => navigate({ view: 'home' });
+  const openGenre = (genre: string) => navigate({ view: 'category', genre });
 
   const handleSongClick = async (song: Song, songsInContext: Song[]) => {
     const success = await playSpecificSong(song.id, songsInContext.map(s => s.id));
@@ -187,6 +188,7 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
               song={song}
               onPlay={() => handleSongClick(song, pageSongs)}
               onRemove={onRemove ? () => onRemove(song) : undefined}
+              onOpenGenre={route.view === 'category' ? undefined : openGenre}
             />
           ))}
         </div>
@@ -287,7 +289,7 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
           ) : searchResults.length > 0 ? (
             <div className="card-grid">
               {searchResults.map((song) => (
-                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, searchResults)} />
+                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, searchResults)} onOpenGenre={openGenre} />
               ))}
             </div>
           ) : (
@@ -312,7 +314,7 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
           {recentlyPlayed.length > 0 ? (
             <div className="card-grid">
               {recentlyPlayed.map((song) => (
-                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, recentlyPlayed)} />
+                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, recentlyPlayed)} onOpenGenre={openGenre} />
               ))}
             </div>
           ) : (

@@ -106,7 +106,9 @@
   transition: background-color 0.25s ease, transform 0.25s ease;
 }
 
-.music-card:hover,
+/* Hover is on the wrapper, so pointing at the heart or ⋯ beside the card keeps it lit */
+.song-card-wrap:hover .music-card,
+.song-card-wrap.menu-open .music-card,
 .music-card:focus-visible {
   background-color: var(--secondary);
   transform: translateY(-2px);
@@ -118,15 +120,92 @@
 }
 
 /* Play overlay on the cover: fades in on hover or keyboard focus (fade from index.css) */
-.music-card:hover .card-play-overlay,
+.song-card-wrap:hover .card-play-overlay,
 .music-card:focus-visible .card-play-overlay {
   opacity: 1;
 }
 
-/* Playlist page: remove (x) button on a song's cover */
 .song-card-wrap {
   position: relative;
 }
+
+/* Room for the heart and ⋯ next to the title */
+.song-card-wrap .card-info {
+  padding-right: 54px;
+}
+
+/* Heart and ⋯ at the bottom right, beside the title. They lift with the card on hover. */
+.card-actions {
+  position: absolute;
+  right: 6px;
+  bottom: 10px;
+  display: flex;
+  gap: 2px;
+  transition: transform 0.25s ease;
+}
+
+.song-card-wrap:hover .card-actions,
+.song-card-wrap.menu-open .card-actions,
+.song-card-wrap:focus-within .card-actions {
+  transform: translateY(-2px);
+}
+
+.card-action {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Shown on hover or keyboard focus. A liked song always shows its pink heart. */
+.song-card-wrap:hover .card-action,
+.song-card-wrap:focus-within .card-action,
+.song-card-wrap.menu-open .card-action,
+.card-action.liked {
+  opacity: 1;
+}
+
+.card-action:hover,
+.card-action:focus-visible {
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.card-action:focus-visible {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.card-like.liked {
+  color: hotpink;
+}
+
+.card-like:active {
+  transform: scale(0.85);
+}
+
+.song-card-wrap.menu-open .card-more {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Touch screens have no hover, so the buttons are always there */
+@media (hover: none) {
+  .card-action {
+    opacity: 1;
+  }
+}
+
+/* Playlist page: remove (x) button on a song's cover */
 
 .card-remove-button {
   position: absolute;
@@ -150,12 +229,13 @@
 .song-card-wrap:hover .card-remove-button,
 .song-card-wrap:focus-within .card-remove-button {
   opacity: 1;
+  transform: translateY(-2px); /* lifts with the card */
 }
 
-.card-remove-button:hover,
-.card-remove-button:focus-visible {
+.song-card-wrap .card-remove-button:hover,
+.song-card-wrap .card-remove-button:focus-visible {
   background: hsl(0, 70%, 50%);
-  transform: scale(1.1);
+  transform: translateY(-2px) scale(1.1);
   outline: none;
 }
 

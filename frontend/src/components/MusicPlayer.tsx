@@ -1,15 +1,25 @@
 ﻿/* eslint-disable unicode-bom */
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import './MusicPlayer.css';
 import { useMusicPlayer } from '../hooks/useMusicPlayer';
+import { useMediaSession } from '../hooks/useMediaSession';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { sendCommand } from '../services/playerService';
 import { updateSliderBackground } from '../utils/helpers';
+import { useFavorites } from '../context/FavoritesContext';
+import { useToast } from '../context/ToastContext';
 import { SongInfo } from './player/SongInfo';
 import { PlayerControls } from './player/PlayerControls';
 import { ProgressBar } from './player/ProgressBar';
 import { PlayerRightSection } from './player/PlayerRightSection';
+import { ShortcutsDialog } from './ShortcutsDialog';
 
-const MusicPlayer: React.FC = () => {
+interface MusicPlayerProps {
+  /** Goes to the search page and puts the cursor in the search box (the / shortcut) */
+  onOpenSearch: () => void;
+}
+
+const MusicPlayer: React.FC<MusicPlayerProps> = ({ onOpenSearch }) => {
   const {
     currentSong,
     isPlaying,
@@ -120,6 +130,72 @@ const MusicPlayer: React.FC = () => {
     sendCommand('NEXT');
   };
 
+  // Media keys, headphone buttons, the lock screen and the system media pop-up
+  useMediaSession({
+    title: songTitle,
+    artist: songArtist,
+    coverUrl,
+    isPlaying,
+    audioRef,
+    onPlay: () => { if (audioRef.current?.paused) handlePlayPause(); },
+    onPause: () => { if (!audioRef.current?.paused) handlePlayPause(); },
+    onPrevious: () => sendCommand('PREV'),
+    onNext: () => sendCommand('NEXT'),
+  });
+
+  // Keyboard shortcuts (press ? for the list)
+  const { isFavorite, addFavorite, removeFavorite } = useFavorites();
+  const { showToast } = useToast();
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
+  const volumeSendTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useKeyboardShortcuts({
+    playPause: handlePlayPause,
+    next: () => sendCommand('NEXT'),
+    previous: () => sendCommand('PREV'),
+    seekBy: (seconds) => {
+      const audio = audioRef.current;
+      if (!audio || !Number.isFinite(audio.duration)) return;
+      audio.currentTime = Math.max(0, Math.min(audio.currentTime + seconds, audio.duration));
+      setCurrentTime(audio.currentTime);
+    },
+    volumeBy: (delta) => {
+      const next = Math.max(0, Math.min(100, (isMuted ? 0 : volume) + delta));
+      // Same as dragging the slider: change it here at once, tell the server when the keys stop
+      setUserAdjustingVolume(true);
+      setVolume(next);
+      setIsMuted(next === 0);
+      if (audioRef.current) audioRef.current.volume = next / 100;
+      if (volumeSendTimer.current) clearTimeout(volumeSendTimer.current);
+      volumeSendTimer.current = setTimeout(() => {
+        sendCommand(`VOLUME:${next}`);
+        setUserAdjustingVolume(false);
+      }, 400);
+    },
+    toggleMute: () => sendCommand('MUTE'),
+    toggleShuffle: () => {
+      sendCommand('SHUFFLE');
+      showToast(shuffleEnabled ? 'Shuffle off' : 'Shuffle on', 'info');
+    },
+    toggleRepeat: () => {
+      sendCommand('REPEAT');
+      showToast(repeatEnabled ? 'Repeat off' : 'Repeat on', 'info');
+    },
+    toggleLike: () => {
+      if (!currentSong) return;
+      if (isFavorite(currentSong.id)) {
+        removeFavorite(currentSong.id);
+        showToast(`Removed ${currentSong.title} from Favorites`, 'info');
+      } else {
+        addFavorite(currentSong);
+        showToast(`Added ${currentSong.title} to Favorites`, 'success');
+      }
+    },
+    openSearch: onOpenSearch,
+    openHelp: () => setShowShortcuts(true),
+  });
+
   return (
     <div className="music-player">
       <audio
@@ -158,7 +234,10 @@ const MusicPlayer: React.FC = () => {
         onVolumeChange={handleVolumeChange}
         onVolumeChangeEnd={handleVolumeChangeEnd}
         onMute={handleMute}
+        onShowShortcuts={() => setShowShortcuts(true)}
       />
+
+      {showShortcuts && <ShortcutsDialog onClose={closeShortcuts} />}
     </div>
   );
 };
