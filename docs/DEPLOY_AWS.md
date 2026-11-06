@@ -119,11 +119,17 @@ Only `music/*` and `cover/*` are public. First copy `s3-bucket-policy.json` to
 
 ### 2.3 Cognito user pool
 ```
-aws cognito-idp create-user-pool --pool-name music-box-users --auto-verified-attributes email --schema Name=email,Required=true,Mutable=true --policies "PasswordPolicy={MinimumLength=8,RequireUppercase=false,RequireLowercase=true,RequireNumbers=true,RequireSymbols=false}" --account-recovery-setting "RecoveryMechanisms=[{Priority=1,Name=verified_email}]"
-aws cognito-idp create-user-pool-client --user-pool-id USER_POOL_ID --client-name music-box-web --no-generate-secret --explicit-auth-flows ALLOW_USER_SRP_AUTH ALLOW_REFRESH_TOKEN_AUTH
+aws cognito-idp create-user-pool --pool-name music-box-users-v2 --alias-attributes email --username-configuration CaseSensitive=false --auto-verified-attributes email --schema Name=email,Required=true,Mutable=true --policies "PasswordPolicy={MinimumLength=8,RequireUppercase=false,RequireLowercase=true,RequireNumbers=true,RequireSymbols=false}" --account-recovery-setting "RecoveryMechanisms=[{Priority=1,Name=verified_email}]" --user-pool-tier LITE
+aws cognito-idp create-user-pool-client --user-pool-id USER_POOL_ID --client-name music-box-web --no-generate-secret --explicit-auth-flows ALLOW_USER_SRP_AUTH ALLOW_REFRESH_TOKEN_AUTH --prevent-user-existence-errors ENABLED --enable-token-revocation
 ```
 Note the pool ID (`eu-north-1_...`) and the client ID. Sign-up confirmation codes are sent by
 Cognito's built-in email (50 per day, plenty for a portfolio site).
+
+- `--alias-attributes email`: users sign in with their username **or** their verified email.
+- `--username-configuration CaseSensitive=false`: `Kevin` and `kevin` are the same account.
+- Both can only be set when the pool is created. Changing them later means a new pool, and
+  every user signing up again.
+- The Lite tier is free up to 10,000 monthly active users.
 
 ### 2.4 RDS MySQL database
 Choose a strong password without `/`, `@`, `"` or spaces.
