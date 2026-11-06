@@ -1,0 +1,36 @@
+{
+  "CallerReference": "music-box-backend-1",
+  "Comment": "HTTPS in front of the Music Box backend (Elastic Beanstalk)",
+  "Enabled": true,
+  "PriceClass": "PriceClass_100",
+  "HttpVersion": "http2",
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "eb-backend",
+        "DomainName": "EB_CNAME",
+        "CustomOriginConfig": {
+          "HTTPPort": 80,
+          "HTTPSPort": 443,
+          "OriginProtocolPolicy": "http-only",
+          "OriginReadTimeout": 60,
+          "OriginKeepaliveTimeout": 5,
+          "OriginSslProtocols": { "Quantity": 1, "Items": ["TLSv1.2"] }
+        }
+      }
+    ]
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "eb-backend",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": {
+      "Quantity": 7,
+      "Items": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+      "CachedMethods": { "Quantity": 2, "Items": ["GET", "HEAD"] }
+    },
+    "Compress": false,
+    "CachePolicyId": "CACHING_DISABLED_POLICY_ID",
+    "OriginRequestPolicyId": "ALL_VIEWER_EXCEPT_HOST_POLICY_ID"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "BudgetName": "music-box-monthly",
+  "BudgetLimit": { "Amount": "40", "Unit": "USD" },
+  "TimeUnit": "MONTHLY",
+  "BudgetType": "COST"
+}

@@ -12,7 +12,7 @@
 </p>
 
 ## Website
-Not available anymore due to AWS tokens.
+Being redeployed. See [docs/DEPLOY_AWS.md](docs/DEPLOY_AWS.md) for the step-by-step AWS setup.
 
 ## Features
 - Cloud-based music streaming
