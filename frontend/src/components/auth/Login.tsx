@@ -54,7 +54,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onForgotPassword, notic
     <AuthLayout>
       <div className="auth-heading">
         <h1>Sign in</h1>
-        <p>Use your username or email to continue, or create a free account.</p>
+        <p>Use your username or email to continue.</p>
       </div>
 
       <form className="auth-form" onSubmit={handleSubmit}>
