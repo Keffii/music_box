@@ -239,10 +239,11 @@ The GitHub connection needs a browser sign-in, so this part is done in the conso
    you move to a custom domain.
 
 Pages have their own addresses (`/library`, `/genre/lofi`, `/playlist/3`, `/search?q=...`).
-New Amplify apps already have the rewrite rule that serves `index.html` for these
-(**Hosting → Rewrites and redirects**). If a page link gives a 404, add a rewrite from
-`</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>` to
-`/index.html` with type **200 (Rewrite)**.
+Amplify serves `index.html` for these with a rewrite rule (**Hosting → Rewrites and
+redirects**). The rule new apps get leaves out `.webp` and `.jpeg`, so those images come back
+as the HTML page instead. Use this rule, from
+`</^[^.]+$|\.(?!(css|gif|ico|jpg|jpeg|js|png|txt|svg|webp|woff|woff2|ttf|map|json|webmanifest)$)([^.]+$)/>`
+to `/index.html`, type **200 (Rewrite)**.
 
 ---
 
