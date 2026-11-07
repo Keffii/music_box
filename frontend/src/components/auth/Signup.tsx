@@ -65,7 +65,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout compact>
       <BackButton onClick={() => onSwitchToLogin()} />
       <div className="auth-heading">
         <h1>Create your account</h1>

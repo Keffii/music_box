@@ -27,9 +27,10 @@ export const AuthLayout: React.FC<{
   children: React.ReactNode;
   /** The feature tiles under the card: only on sign-in, so the taller forms still fit without scrolling */
   showFeatures?: boolean;
-}> = ({ children, showFeatures = false }) => (
-  // Without the features (sign-up, reset), the description is left out too, so the taller forms fit
-  <div className={`auth-page${showFeatures ? '' : ' auth-page--compact'}`}>
+  /** Sign-up only: its form is the tallest, so on short screens the intro shrinks to make it fit */
+  compact?: boolean;
+}> = ({ children, showFeatures = false, compact = false }) => (
+  <div className={`auth-page${compact ? ' auth-page--compact' : ''}`}>
     <main className="auth-main">
       <header className="auth-intro">
         <div className="auth-brand">
