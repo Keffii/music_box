@@ -11,6 +11,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   signIn: (username: string, password: string) => Promise<AuthResult & { needsConfirmation?: boolean }>;
+  signInAsGuest: () => Promise<AuthResult>;
   signUp: (username: string, password: string, email: string) => Promise<AuthResult & { requiresConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   refreshAuth: () => Promise<void>;
@@ -52,6 +53,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return result;
   };
 
+  const signInAsGuest = async () => {
+    const result = await authService.signInAsGuest();
+    if (result.success) {
+      await refreshAuth();
+    }
+    return result;
+  };
+
   const signUp = async (username: string, password: string, email: string) => {
     return await authService.signUp({ username, password, email });
   };
@@ -66,6 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: !!user,
     isLoading,
     signIn,
+    signInAsGuest,
     signUp,
     signOut,
     refreshAuth,

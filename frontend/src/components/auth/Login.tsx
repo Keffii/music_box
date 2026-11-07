@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { AuthLayout } from './AuthLayout';
 import { AuthAlert, PasswordField, SubmitButton } from './AuthParts';
 import { ConfirmEmailStep } from './ConfirmEmailStep';
+import { GUEST_SIGN_IN_ENABLED } from '../../utils/guest';
 
 interface LoginProps {
   onSwitchToSignup: () => void;
@@ -12,7 +13,8 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onForgotPassword, notice: initialNotice }) => {
-  const { signIn } = useAuth();
+  const { signIn, signInAsGuest } = useAuth();
+  const [guestLoading, setGuestLoading] = useState(false);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -34,6 +36,17 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onForgotPassword, notic
     } else {
       setError(result.error || 'Sign in failed.');
     }
+  };
+
+  // A throwaway account per visitor, no email or password (see utils/guest.ts)
+  const handleGuest = async () => {
+    setError('');
+    setNotice('');
+    setGuestLoading(true);
+    const result = await signInAsGuest();
+    if (result.success) return;
+    setGuestLoading(false);
+    setError(result.error || 'Guest sign-in failed.');
   };
 
   if (confirming) {
@@ -89,8 +102,24 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onForgotPassword, notic
           }
         />
 
-        <SubmitButton loading={loading}>{loading ? 'Signing in…' : 'Sign in'}</SubmitButton>
+        <SubmitButton loading={loading} disabled={guestLoading}>{loading ? 'Signing in…' : 'Sign in'}</SubmitButton>
       </form>
+
+      {GUEST_SIGN_IN_ENABLED && (
+        <>
+          <div className="auth-divider"><span>or</span></div>
+          <button
+            type="button"
+            className="auth-button auth-button--secondary"
+            onClick={handleGuest}
+            disabled={loading || guestLoading}
+            aria-busy={guestLoading}
+          >
+            {guestLoading && <span className="auth-spinner" aria-hidden="true" />}
+            <span>{guestLoading ? 'Signing in…' : 'Sign in as guest'}</span>
+          </button>
+        </>
+      )}
 
       <div className="auth-switch">
         New to Music Box?{' '}

@@ -11,6 +11,7 @@ import {
   confirmResetPassword,
 } from 'aws-amplify/auth';
 import { friendlyAuthError } from '../utils/authErrors';
+import { newGuestCredentials } from '../utils/guest';
 
 // Configure Amplify (this will be called from index.tsx)
 export const configureAmplify = () => {
@@ -101,6 +102,22 @@ export const authService = {
     } catch (error: any) {
       if (error?.name === 'UserNotConfirmedException') return { success: false, needsConfirmation: true };
       return failure(error, 'Sign in error');
+    }
+  },
+
+  // Create a throwaway guest account and sign in with it (see utils/guest.ts)
+  async signInAsGuest(): Promise<AuthResult> {
+    const { username, email, password } = newGuestCredentials();
+    try {
+      const { nextStep } = await signUp({ username, password, options: { userAttributes: { email } } });
+      if (nextStep.signUpStep !== 'DONE' && nextStep.signUpStep !== 'COMPLETE_AUTO_SIGN_IN') {
+        // The pre-sign-up Lambda isn't attached, so Cognito wants an email code that will never arrive
+        return { success: false, error: "Guest sign-in isn't available right now. Create an account instead." };
+      }
+      const { isSignedIn } = await signIn({ username, password });
+      return isSignedIn ? { success: true } : { success: false, error: 'Guest sign-in failed. Try again.' };
+    } catch (error: any) {
+      return failure(error, 'Guest sign in error');
     }
   },
 
