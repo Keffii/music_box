@@ -7,13 +7,18 @@
   background: var(--background);
 }
 
+/*
+ * Anchored to the top, not centred, so the card sits in exactly the same place on every
+ * screen (sign-in, reset, confirm) whatever is under it. The top space is what centring
+ * the sign-in page would give (it is about 760px tall), so sign-in still looks centred.
+ */
 .auth-main {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 100%;
-  padding: 24px;
+  padding: clamp(24px, calc((100vh - 760px) / 2), 160px) 24px 24px;
 }
 
 /* Above the card: the name, then what the site is about */
@@ -586,13 +591,16 @@
   }
 }
 
-/* Sign-up and reset: just the logo and headline above the card */
-.auth-page--compact .auth-lead {
-  display: none;
-}
+/* Sign-up, when the screen is too short for its tall form: just the logo and headline above the card
+   (on taller screens it keeps the full intro, so its card lines up with sign-in) */
+@media (max-height: 900px) {
+  .auth-page--compact .auth-lead {
+    display: none;
+  }
 
-.auth-page--compact .auth-headline {
-  margin-bottom: 0;
+  .auth-page--compact .auth-headline {
+    margin-bottom: 0;
+  }
 }
 
 /* ...and on short screens only the logo */
