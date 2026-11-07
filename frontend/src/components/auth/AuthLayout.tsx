@@ -37,7 +37,7 @@ export const AuthLayout: React.FC<{
           <img src={logo} alt="" className="auth-brand-logo" />
           <span className="auth-brand-name">Music Box</span>
         </div>
-        <h2 className="auth-headline">Your music, in sync on every device.</h2>
+        <h2 className="auth-headline">Your music, in sync across your devices.</h2>
         <p className="auth-lead">
           A music streaming app with playlists, favourites and live playback sync, built as a full{'‑'}stack project.
         </p>
