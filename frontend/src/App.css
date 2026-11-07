@@ -109,7 +109,6 @@
   width: 64px;
   height: 64px;
   border-radius: 16px;
-  box-shadow: 0 10px 30px hsla(330, 90%, 60%, 0.35);
 }
 
 .app-loading-bar {
