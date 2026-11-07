@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AuthLayout } from './AuthLayout';
-import { AuthAlert, PasswordField, SubmitButton, passwordMeetsRules } from './AuthParts';
+import { AuthAlert, BackButton, PasswordField, SubmitButton, passwordMeetsRules } from './AuthParts';
 import { ConfirmEmailStep } from './ConfirmEmailStep';
 
 interface SignupProps {
@@ -56,6 +56,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
           username={username.trim()}
           destination={email.trim()}
           password={password}
+          backLabel="Back"
           onBack={() => setConfirming(false)}
           onConfirmedWithoutSignIn={onSwitchToLogin}
         />
@@ -65,6 +66,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
   return (
     <AuthLayout>
+      <BackButton onClick={() => onSwitchToLogin()} />
       <div className="auth-heading">
         <h1>Create your account</h1>
         <p>It takes a minute. You’ll get a code by email to confirm it.</p>

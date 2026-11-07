@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash, faCircle } from '@fortawesome/free-regular-svg-icons';
-import { faCircleCheck, faCircleExclamation, faCircleInfo } from '@fortawesome/free-solid-svg-icons';
+import { faCircleCheck, faCircleExclamation, faCircleInfo, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+
+/** The ← button at the top of a card, back to the sign-in screen (or the previous step) */
+export const BackButton: React.FC<{ onClick: () => void; label?: string }> = ({ onClick, label = 'Back to sign in' }) => (
+  <button type="button" className="auth-back" onClick={onClick}>
+    <FontAwesomeIcon icon={faArrowLeft} />
+    {label}
+  </button>
+);
 
 /** The same rules as the Cognito user pool */
 const PASSWORD_RULES: { label: string; test: (v: string) => boolean }[] = [

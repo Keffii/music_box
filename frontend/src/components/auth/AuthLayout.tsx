@@ -1,9 +1,17 @@
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faListUl, faTowerBroadcast, faKeyboard } from '@fortawesome/free-solid-svg-icons';
 import logo from '../../assets/logo.png';
 import '../Auth.css';
 
 const REPO_URL = 'https://github.com/Keffii/music_box';
 const STACK = ['React', 'TypeScript', 'Spring Boot', 'MySQL', 'AWS'];
+
+const FEATURES = [
+  { icon: faListUl, title: 'Playlists and favourites', text: 'Save the songs you love and build playlists that follow you.' },
+  { icon: faTowerBroadcast, title: 'Live sync across devices', text: 'Press play on your phone and your laptop follows along.' },
+  { icon: faKeyboard, title: 'Media keys and shortcuts', text: 'Control playback from the keyboard, headphones or lock screen.' },
+];
 
 const GitHubMark: React.FC = () => (
   <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="currentColor">
@@ -12,19 +20,36 @@ const GitHubMark: React.FC = () => (
 );
 
 /**
- * The sign-in, sign-up and password-reset screens: one centred column on every screen size.
- * The logo and a one-line description on top, the form in a card, and what it's built with underneath.
+ * The sign-in, sign-up and password-reset screens, in one centred column:
+ * what Music Box is on top, the form in a card, the main features and what it's built with underneath.
  */
 export const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="auth-page">
     <main className="auth-main">
-      <header className="auth-brand">
-        <img src={logo} alt="" className="auth-brand-logo" />
-        <span className="auth-brand-name">Music Box</span>
-        <p className="auth-tagline">Stream music, build playlists and keep playback in sync on every device.</p>
+      <header className="auth-intro">
+        <div className="auth-brand">
+          <img src={logo} alt="" className="auth-brand-logo" />
+          <span className="auth-brand-name">Music Box</span>
+        </div>
+        <h2 className="auth-headline">Your music, in sync on every device.</h2>
+        <p className="auth-lead">
+          A music streaming app with playlists, favourites and live playback sync, built as a full-stack project.
+        </p>
       </header>
 
       <div className="auth-card">{children}</div>
+
+      <section className="auth-overview" aria-label="What Music Box does">
+        <ul className="auth-features">
+          {FEATURES.map(f => (
+            <li key={f.title}>
+              <span className="auth-feature-icon"><FontAwesomeIcon icon={f.icon} /></span>
+              <strong>{f.title}</strong>
+              <span>{f.text}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <footer className="auth-footer">
         <ul className="auth-stack" aria-label="Built with">
