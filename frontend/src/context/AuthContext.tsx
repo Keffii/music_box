@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { authService } from '../services/authService';
+import { authService, AuthResult } from '../services/authService';
 
 interface User {
   username: string;
@@ -10,8 +10,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  signIn: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (username: string, password: string, email: string) => Promise<any>;
+  signIn: (username: string, password: string) => Promise<AuthResult & { needsConfirmation?: boolean }>;
+  signUp: (username: string, password: string, email: string) => Promise<AuthResult & { requiresConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   refreshAuth: () => Promise<void>;
 }

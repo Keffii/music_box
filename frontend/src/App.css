@@ -93,3 +93,51 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* First load, while the saved sign-in is checked */
+.app-loading {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: var(--background);
+}
+
+.app-loading-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px hsla(330, 90%, 60%, 0.35);
+}
+
+.app-loading-bar {
+  position: relative;
+  width: 120px;
+  height: 3px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--secondary);
+}
+
+.app-loading-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: var(--primary);
+  animation: app-loading-slide 1s ease-in-out infinite;
+}
+
+@keyframes app-loading-slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-bar::after {
+    animation-duration: 3s;
+  }
+}

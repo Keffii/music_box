@@ -6,8 +6,9 @@ import logo from './assets/logo.png';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import MusicPlayer from './components/MusicPlayer';
-import Login from './components/Login';
-import Signup from './components/Signup';
+import Login from './components/auth/Login';
+import Signup from './components/auth/Signup';
+import ForgotPassword from './components/auth/ForgotPassword';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { PlaylistProvider } from './context/PlaylistContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -16,7 +17,8 @@ import { useRoute, View } from './utils/router';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
-  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
+  const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [authNotice, setAuthNotice] = useState<string | undefined>();
   // The page comes from the address bar, so Back/Forward and shared links work
   const [route, navigate] = useRoute();
   const selectedPlaylistId = route.view === 'playlist' ? route.id : null;
@@ -61,22 +63,28 @@ const AppContent: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="App" style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        height: '100vh'
-      }}>
-        <p style={{ color: 'var(--foreground)' }}>Loading...</p>
+      <div className="app-loading" role="status" aria-label="Loading Music Box">
+        <img src={logo} alt="" className="app-loading-logo" />
+        <span className="app-loading-bar" aria-hidden="true" />
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return authView === 'login' ? (
-      <Login onSwitchToSignup={() => setAuthView('signup')} />
-    ) : (
-      <Signup onSwitchToLogin={() => setAuthView('login')} />
+    // Each screen can hand a message to the sign-in screen (e.g. "Your password is changed")
+    const toLogin = (notice?: string) => {
+      setAuthNotice(notice);
+      setAuthView('login');
+    };
+    if (authView === 'signup') return <Signup onSwitchToLogin={toLogin} />;
+    if (authView === 'forgot') return <ForgotPassword onBack={toLogin} />;
+    return (
+      <Login
+        key={authNotice || 'login'}
+        notice={authNotice}
+        onSwitchToSignup={() => { setAuthNotice(undefined); setAuthView('signup'); }}
+        onForgotPassword={() => { setAuthNotice(undefined); setAuthView('forgot'); }}
+      />
     );
   }
 
