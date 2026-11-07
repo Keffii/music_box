@@ -13,7 +13,7 @@ export const BackButton: React.FC<{ onClick: () => void; label?: string }> = ({ 
 
 /** The same rules as the Cognito user pool */
 const PASSWORD_RULES: { label: string; test: (v: string) => boolean }[] = [
-  { label: 'At least 8 characters', test: (v) => v.length >= 8 },
+  { label: '8+ characters', test: (v) => v.length >= 8 },
   { label: 'A lowercase letter', test: (v) => /[a-z]/.test(v) },
   { label: 'A number', test: (v) => /[0-9]/.test(v) },
 ];

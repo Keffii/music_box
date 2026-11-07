@@ -69,7 +69,6 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       <BackButton onClick={() => onSwitchToLogin()} />
       <div className="auth-heading">
         <h1>Create your account</h1>
-        <p>It takes a minute. You’ll get a code by email to confirm it.</p>
       </div>
 
       <form className="auth-form" onSubmit={handleSubmit}>
@@ -90,7 +89,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
             required
             aria-describedby="username-hint"
           />
-          <p id="username-hint" className="form-hint">No spaces. Capital letters don’t matter when signing in.</p>
+          <p id="username-hint" className="form-hint">No spaces. Capital letters don’t matter.</p>
         </div>
 
         <div className="form-group">
@@ -119,11 +118,6 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
         <SubmitButton loading={loading}>{loading ? 'Creating your account…' : 'Create account'}</SubmitButton>
       </form>
-
-      <div className="auth-switch">
-        Already have an account?{' '}
-        <button type="button" className="auth-link" onClick={() => onSwitchToLogin()}>Sign in</button>
-      </div>
     </AuthLayout>
   );
 };
