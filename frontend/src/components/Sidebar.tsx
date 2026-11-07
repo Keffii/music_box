@@ -3,6 +3,7 @@ import './Sidebar.css';
 import { useFavorites } from '../context/FavoritesContext';
 import { usePlaylists } from '../context/PlaylistContext';
 import { useAuth } from '../context/AuthContext';
+import { displayName } from '../utils/guest';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMusic, faHome, faSearch, faPlus, faHeart, faSignOutAlt, faUser, faTrash, faPlay } from '@fortawesome/free-solid-svg-icons';
@@ -235,7 +236,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
             <FontAwesomeIcon icon={faUser} />
           </div>
           <div className="user-info">
-            <div className="user-name">{user?.username || 'User'}</div>
+            <div className="user-name">{displayName(user?.username)}</div>
           </div>
         </div>
         <button className="sign-out-button" onClick={signOut}>

@@ -131,6 +131,23 @@ Cognito's built-in email (50 per day, plenty for a portfolio site).
   every user signing up again.
 - The Lite tier is free up to 10,000 monthly active users.
 
+#### Guest sign-in (optional)
+"Sign in as guest" creates a throwaway account per visitor (`guest-…`, email `…@guest.invalid`).
+A pre-sign-up Lambda confirms those accounts without an email code; everyone else is unaffected.
+```
+cd infra/aws/guest-pre-signup && tar -a -cf ../guest-pre-signup.zip index.mjs && cd ../../..
+aws iam create-role --role-name music-box-guest-pre-signup --assume-role-policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+aws iam attach-role-policy --role-name music-box-guest-pre-signup --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+aws lambda create-function --function-name music-box-guest-pre-signup --runtime nodejs22.x --handler index.handler --zip-file fileb://infra/aws/guest-pre-signup.zip --role arn:aws:iam::ACCOUNT_ID:role/music-box-guest-pre-signup
+```
+Then attach it in the console: **Cognito → User pools → your pool → Extensions → Add Lambda trigger →
+Sign-up → Pre sign-up trigger →** `music-box-guest-pre-signup`. The console also grants Cognito
+permission to call it. (Don't use `aws cognito-idp update-user-pool --lambda-config`: it resets
+every pool setting you leave out.)
+
+Finally add `REACT_APP_GUEST_SIGN_IN` = `true` to the Amplify environment variables (step 3 below)
+and redeploy. The button stays hidden without it, so no guest sign-up can hit a pool without the trigger.
+
 ### 2.4 RDS MySQL database
 Choose a strong password without `/`, `@`, `"` or spaces.
 ```
@@ -228,6 +245,7 @@ The GitHub connection needs a browser sign-in, so this part is done in the conso
    | `REACT_APP_API_BASE` | `https://xxxx.cloudfront.net` (no trailing slash) |
    | `REACT_APP_COGNITO_USER_POOL_ID` | the pool ID from 2.3 |
    | `REACT_APP_COGNITO_APP_CLIENT_ID` | the client ID from 2.3 |
+   | `REACT_APP_GUEST_SIGN_IN` | `true` once the guest Lambda is attached (optional, see 2.3) |
 
 4. **Save and deploy.** The site URL looks like `https://aws-redeploy.d1abc2def3.amplifyapp.com`.
 5. Lock CORS down to that URL:

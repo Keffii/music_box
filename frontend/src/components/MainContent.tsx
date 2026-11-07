@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faCompass, faMusic, faPen, faRecordVinyl, faListUl } from '@fortawesome/free-solid-svg-icons';
 import { faClock } from '@fortawesome/free-regular-svg-icons';
 import { useAuth } from '../context/AuthContext';
+import { displayName } from '../utils/guest';
 import { usePlaylists } from '../context/PlaylistContext';
 import { useToast } from '../context/ToastContext';
 import { GENRES, findGenre } from '../utils/genres';
@@ -302,7 +303,7 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
     content = (
       <>
         <div className="greeting-section">
-          <h1>Hi, {user?.username || 'User'}</h1>
+          <h1>Hi, {displayName(user?.username)}</h1>
           <p>Welcome! Here's what's playing.</p>
         </div>
 
