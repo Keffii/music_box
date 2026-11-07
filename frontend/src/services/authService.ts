@@ -1,13 +1,16 @@
 import { Amplify } from 'aws-amplify';
-import { 
-  signIn, 
-  signUp, 
-  signOut, 
+import {
+  signIn,
+  signUp,
+  signOut,
   getCurrentUser,
   fetchAuthSession,
   confirmSignUp,
-  resendSignUpCode
+  resendSignUpCode,
+  resetPassword,
+  confirmResetPassword,
 } from 'aws-amplify/auth';
+import { friendlyAuthError } from '../utils/authErrors';
 
 // Configure Amplify (this will be called from index.tsx)
 export const configureAmplify = () => {
@@ -40,95 +43,94 @@ export interface SignInParams {
   password: string;
 }
 
+/** Every call returns this: on failure, `error` is a message fit to show and `code` the Cognito error name */
+export interface AuthResult {
+  success: boolean;
+  error?: string;
+  code?: string;
+}
+
+const failure = (error: any, label: string): AuthResult => {
+  console.error(`${label}:`, error);
+  return { success: false, code: error?.name, error: friendlyAuthError(error?.name, error?.message) };
+};
+
 export const authService = {
   // Sign up a new user
-  async signUp({ username, password, email }: SignUpParams) {
+  async signUp({ username, password, email }: SignUpParams): Promise<AuthResult & { userId?: string; requiresConfirmation?: boolean }> {
     try {
       const { userId, nextStep } = await signUp({
         username,
         password,
-        options: {
-          userAttributes: {
-            email,
-          },
-        },
+        options: { userAttributes: { email } },
       });
-      
-      return { 
-        success: true, 
-        userId, 
-        requiresConfirmation: nextStep.signUpStep === 'CONFIRM_SIGN_UP'
-      };
+      return { success: true, userId, requiresConfirmation: nextStep.signUpStep === 'CONFIRM_SIGN_UP' };
     } catch (error: any) {
-      console.error('Sign up error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Sign up failed'
-      };
+      return failure(error, 'Sign up error');
     }
   },
 
-  // Confirm sign up with verification code
-  async confirmSignUp(username: string, code: string) {
+  // Confirm sign up with the code from the email
+  async confirmSignUp(username: string, code: string): Promise<AuthResult> {
     try {
       await confirmSignUp({ username, confirmationCode: code });
       return { success: true };
     } catch (error: any) {
-      console.error('Confirmation error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Confirmation failed'
-      };
+      return failure(error, 'Confirmation error');
     }
   },
 
-  // Resend confirmation code
-  async resendConfirmationCode(username: string) {
+  // Send the confirmation code again
+  async resendConfirmationCode(username: string): Promise<AuthResult & { destination?: string }> {
     try {
-      await resendSignUpCode({ username });
-      return { success: true };
+      const { destination } = await resendSignUpCode({ username });
+      return { success: true, destination };
     } catch (error: any) {
-      console.error('Resend code error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Failed to resend code'
-      };
+      return failure(error, 'Resend code error');
     }
   },
 
-  // Sign in
-  async signIn({ username, password }: SignInParams) {
+  // Sign in with a username or a verified email.
+  // An account that was never confirmed comes back with needsConfirmation, so the app can ask for the code.
+  async signIn({ username, password }: SignInParams): Promise<AuthResult & { needsConfirmation?: boolean }> {
     try {
       const { isSignedIn, nextStep } = await signIn({ username, password });
-      
-      if (isSignedIn) {
-        return { success: true };
-      } else {
-        return { 
-          success: false, 
-          error: `Additional step required: ${nextStep.signInStep}`
-        };
-      }
+      if (isSignedIn) return { success: true };
+      if (nextStep.signInStep === 'CONFIRM_SIGN_UP') return { success: false, needsConfirmation: true };
+      return { success: false, error: `Additional step required: ${nextStep.signInStep}` };
     } catch (error: any) {
-      console.error('Sign in error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Sign in failed'
-      };
+      if (error?.name === 'UserNotConfirmedException') return { success: false, needsConfirmation: true };
+      return failure(error, 'Sign in error');
+    }
+  },
+
+  // Forgot password, step 1: email a reset code (works with the username or the email)
+  async requestPasswordReset(username: string): Promise<AuthResult & { destination?: string }> {
+    try {
+      const { nextStep } = await resetPassword({ username });
+      return { success: true, destination: nextStep.codeDeliveryDetails?.destination };
+    } catch (error: any) {
+      return failure(error, 'Reset password error');
+    }
+  },
+
+  // Forgot password, step 2: the code and the new password
+  async confirmPasswordReset(username: string, code: string, newPassword: string): Promise<AuthResult> {
+    try {
+      await confirmResetPassword({ username, confirmationCode: code, newPassword });
+      return { success: true };
+    } catch (error: any) {
+      return failure(error, 'Confirm reset password error');
     }
   },
 
   // Sign out
-  async signOut() {
+  async signOut(): Promise<AuthResult> {
     try {
       await signOut();
       return { success: true };
     } catch (error: any) {
-      console.error('Sign out error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Sign out failed'
-      };
+      return failure(error, 'Sign out error');
     }
   },
 
@@ -142,7 +144,7 @@ export const authService = {
     }
   },
 
-  // Get JWT token
+  // The ID token sent to the backend
   async getAccessToken(): Promise<string | null> {
     try {
       const session = await fetchAuthSession();
