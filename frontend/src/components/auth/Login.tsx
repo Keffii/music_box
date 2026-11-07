@@ -51,7 +51,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onForgotPassword, notic
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout showFeatures>
       <div className="auth-heading">
         <h1>Sign in</h1>
       </div>

@@ -23,8 +23,13 @@ const GitHubMark: React.FC = () => (
  * The sign-in, sign-up and password-reset screens, in one centred column:
  * what Music Box is on top, the form in a card, the main features and what it's built with underneath.
  */
-export const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="auth-page">
+export const AuthLayout: React.FC<{
+  children: React.ReactNode;
+  /** The feature tiles under the card: only on sign-in, so the taller forms still fit without scrolling */
+  showFeatures?: boolean;
+}> = ({ children, showFeatures = false }) => (
+  // Without the features (sign-up, reset), the description is left out too, so the taller forms fit
+  <div className={`auth-page${showFeatures ? '' : ' auth-page--compact'}`}>
     <main className="auth-main">
       <header className="auth-intro">
         <div className="auth-brand">
@@ -33,23 +38,25 @@ export const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         </div>
         <h2 className="auth-headline">Your music, in sync on every device.</h2>
         <p className="auth-lead">
-          A music streaming app with playlists, favourites and live playback sync, built as a full-stack project.
+          A music streaming app with playlists, favourites and live playback sync, built as a full{'‑'}stack project.
         </p>
       </header>
 
       <div className="auth-card">{children}</div>
 
-      <section className="auth-overview" aria-label="What Music Box does">
-        <ul className="auth-features">
-          {FEATURES.map(f => (
-            <li key={f.title}>
-              <span className="auth-feature-icon"><FontAwesomeIcon icon={f.icon} /></span>
-              <strong>{f.title}</strong>
-              <span>{f.text}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {showFeatures && (
+        <section className="auth-overview" aria-label="What Music Box does">
+          <ul className="auth-features">
+            {FEATURES.map(f => (
+              <li key={f.title}>
+                <span className="auth-feature-icon"><FontAwesomeIcon icon={f.icon} /></span>
+                <strong>{f.title}</strong>
+                <span>{f.text}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <footer className="auth-footer">
         <ul className="auth-stack" aria-label="Built with">
