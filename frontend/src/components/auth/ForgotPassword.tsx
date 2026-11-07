@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import { AuthLayout } from './AuthLayout';
-import { AuthAlert, PasswordField, SubmitButton, passwordMeetsRules } from './AuthParts';
+import { AuthAlert, BackButton, PasswordField, SubmitButton, passwordMeetsRules } from './AuthParts';
 
 interface ForgotPasswordProps {
   onBack: (notice?: string) => void;
@@ -63,6 +63,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack }) => {
   if (step === 'request') {
     return (
       <AuthLayout>
+        <BackButton onClick={() => onBack()} />
         <div className="auth-heading">
           <h1>Reset your password</h1>
           <p>Enter your username or email and we’ll send you a code to choose a new password.</p>
@@ -89,16 +90,13 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack }) => {
 
           <SubmitButton loading={loading}>{loading ? 'Sending…' : 'Send code'}</SubmitButton>
         </form>
-
-        <div className="auth-switch">
-          <button type="button" className="auth-link" onClick={() => onBack()}>Back to sign in</button>
-        </div>
       </AuthLayout>
     );
   }
 
   return (
     <AuthLayout>
+      <BackButton onClick={() => onBack()} />
       <div className="auth-heading">
         <h1>Choose a new password</h1>
         <p>
@@ -143,8 +141,6 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack }) => {
       <div className="auth-switch">
         No email?{' '}
         <button type="button" className="auth-link" onClick={() => requestCode()} disabled={loading}>Send a new code</button>
-        {' · '}
-        <button type="button" className="auth-link" onClick={() => onBack()}>Back to sign in</button>
       </div>
     </AuthLayout>
   );

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
-import { AuthAlert, SubmitButton } from './AuthParts';
+import { AuthAlert, BackButton, SubmitButton } from './AuthParts';
 
 interface ConfirmEmailStepProps {
   username: string;
@@ -12,6 +12,8 @@ interface ConfirmEmailStepProps {
   /** Send a fresh code on open (an old account signing in has no code waiting) */
   sendCodeOnOpen?: boolean;
   onBack: () => void;
+  /** Text of the ← button: "Back to sign in" by default, "Back" when it returns to the sign-up form */
+  backLabel?: string;
   /** Confirmed but not signed in (no password known): back to sign-in with this message */
   onConfirmedWithoutSignIn: (message: string) => void;
 }
@@ -20,7 +22,7 @@ const RESEND_COOLDOWN = 30;
 
 /** Enter the 6-digit code from the email. On success the user is signed in directly when possible. */
 export const ConfirmEmailStep: React.FC<ConfirmEmailStepProps> = ({
-  username, destination, password, sendCodeOnOpen, onBack, onConfirmedWithoutSignIn,
+  username, destination, password, sendCodeOnOpen, onBack, backLabel, onConfirmedWithoutSignIn,
 }) => {
   const { signIn } = useAuth();
   const [code, setCode] = useState('');
@@ -75,6 +77,7 @@ export const ConfirmEmailStep: React.FC<ConfirmEmailStepProps> = ({
 
   return (
     <>
+      <BackButton onClick={onBack} label={backLabel} />
       <div className="auth-heading">
         <h1>Check your email</h1>
         <p>
@@ -112,9 +115,6 @@ export const ConfirmEmailStep: React.FC<ConfirmEmailStepProps> = ({
         <button type="button" className="auth-link" onClick={resend} disabled={cooldown > 0}>
           {cooldown > 0 ? `send a new code in ${cooldown}s` : 'send a new code'}
         </button>
-      </div>
-      <div className="auth-switch">
-        <button type="button" className="auth-link" onClick={onBack}>Back to sign in</button>
       </div>
     </>
   );
