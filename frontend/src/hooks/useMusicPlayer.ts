@@ -115,6 +115,12 @@ export const useMusicPlayer = () => {
     // (not when the same state is replayed, e.g. after an SSE reconnect)
     const isNewCommand = lastCommandSeqRef.current !== null && data.commandSeq !== lastCommandSeqRef.current;
     lastCommandSeqRef.current = data.commandSeq ?? null;
+
+    // A new PLAY counts as a play even when the song stays the same (e.g. pressing Play on the song
+    // that's already loaded), so Recently Played refreshes then too, not only when the song changes
+    if (isNewCommand && data.lastCommand === 'PLAY') {
+      setTimeout(() => window.dispatchEvent(new CustomEvent('playHistoryChanged')), 0);
+    }
     if (isNewCommand && data.lastCommand === 'SEEK_FORWARD' && audioRef.current) {
       const target = audioRef.current.currentTime + 10;
       audioRef.current.currentTime = Number.isFinite(audioRef.current.duration)
