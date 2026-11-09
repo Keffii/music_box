@@ -199,6 +199,25 @@
   color: hsl(150, 55%, 68%);
 }
 
+/* Sign-up is the tallest screen: slightly tighter spacing so the list fits without scrolling */
+.auth-page--compact .signup-perks {
+  gap: 4px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
+.auth-page--compact .auth-back {
+  margin-bottom: 12px;
+}
+
+.auth-page--compact .auth-form {
+  gap: 13px;
+}
+
+.auth-page--compact .auth-heading h1:last-child {
+  margin-bottom: 20px;
+}
+
 /* A heading with no subtitle under it (sign-in) still needs space before the form */
 .auth-heading h1:last-child {
   margin-bottom: 24px;
