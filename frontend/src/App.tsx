@@ -6,6 +6,7 @@ import logo from './assets/logo.png';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import MusicPlayer from './components/MusicPlayer';
+import { GuestNudge } from './components/GuestNudge';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 import ForgotPassword from './components/auth/ForgotPassword';
@@ -140,6 +141,7 @@ const AppContent: React.FC = () => {
               <MainContent route={route} navigate={navigate} />
             </div>
             <MusicPlayer onOpenSearch={openSearch} />
+            <GuestNudge onCreateAccount={() => openAuth('signup')} />
           </div>
         </PlaylistProvider>
       </FavoritesProvider>

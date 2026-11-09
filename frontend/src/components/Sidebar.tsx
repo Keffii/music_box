@@ -234,31 +234,39 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
       </div>
 
       <div className="sidebar-footer">
-        <div className="user-profile">
-          <div className="user-avatar">
-            <FontAwesomeIcon icon={faUser} />
-          </div>
-          <div className="user-info">
-            <div className="user-name">{displayName(user?.username)}</div>          </div>
-        </div>
         {isGuest ? (
-          // No account yet: everything works, and signing in keeps what they've made
-          <>
-          <p className="guest-pitch">Sync your music across devices</p>
-          <div className="guest-actions">
-            <button type="button" className="sign-out-button" onClick={() => { onClose?.(); onSignIn?.(); }}>
-              Sign in
-            </button>
-            <button type="button" className="sign-out-button guest-create" onClick={() => { onClose?.(); onCreateAccount?.(); }}>
-              Create account
-            </button>
+          // No account yet: everything works; an account adds the other devices and keeps what they made
+          <div className="guest-card">
+            <div className="guest-card-text">
+              <strong>Sync your music across devices</strong>
+              <span>
+                <FontAwesomeIcon icon={faUser} /> Listening as a guest
+              </span>
+            </div>
+            <div className="guest-actions">
+              <button type="button" className="sign-out-button" onClick={() => { onClose?.(); onSignIn?.(); }}>
+                Sign in
+              </button>
+              <button type="button" className="sign-out-button guest-create" onClick={() => { onClose?.(); onCreateAccount?.(); }}>
+                Create account
+              </button>
+            </div>
           </div>
-          </>
         ) : (
-          <button className="sign-out-button" onClick={signOut}>
-            <FontAwesomeIcon icon={faSignOutAlt} />
-            <span>Sign Out</span>
-          </button>
+          <>
+            <div className="user-profile">
+              <div className="user-avatar">
+                <FontAwesomeIcon icon={faUser} />
+              </div>
+              <div className="user-info">
+                <div className="user-name">{displayName(user?.username)}</div>
+              </div>
+            </div>
+            <button className="sign-out-button" onClick={signOut}>
+              <FontAwesomeIcon icon={faSignOutAlt} />
+              <span>Sign Out</span>
+            </button>
+          </>
         )}
       </div>
     </div>

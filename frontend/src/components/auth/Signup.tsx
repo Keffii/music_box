@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import { AuthLayout } from './AuthLayout';
 import { AuthAlert, BackButton, PasswordField, SubmitButton, passwordMeetsRules } from './AuthParts';
 import { ConfirmEmailStep } from './ConfirmEmailStep';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck } from '@fortawesome/free-solid-svg-icons';
 
 interface SignupProps {
   onSwitchToLogin: (notice?: string) => void;
@@ -17,7 +19,7 @@ const usernameProblem = (username: string): string | null => {
 };
 
 const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
-  const { signUp } = useAuth();
+  const { signUp, isGuest } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -70,6 +72,12 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       <div className="auth-heading">
         <h1>Create your account</h1>
       </div>
+      {/* What an account adds over a guest session */}
+      <ul className="signup-perks">
+        <li><FontAwesomeIcon icon={faCheck} /> Your playlists and favourites on every device</li>
+        <li><FontAwesomeIcon icon={faCheck} /> Play on one device, control it from another</li>
+        {isGuest && <li><FontAwesomeIcon icon={faCheck} /> Keeps everything you saved as a guest</li>}
+      </ul>
 
       <form className="auth-form" onSubmit={handleSubmit}>
         {error && <AuthAlert type="error">{error}</AuthAlert>}
