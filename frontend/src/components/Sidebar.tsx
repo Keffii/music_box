@@ -243,6 +243,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
         </div>
         {isGuest ? (
           // No account yet: everything works, and signing in keeps what they've made
+          <>
+          <p className="guest-pitch">Sync your music across devices</p>
           <div className="guest-actions">
             <button type="button" className="sign-out-button" onClick={() => { onClose?.(); onSignIn?.(); }}>
               Sign in
@@ -251,6 +253,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
               Create account
             </button>
           </div>
+          </>
         ) : (
           <button className="sign-out-button" onClick={signOut}>
             <FontAwesomeIcon icon={faSignOutAlt} />
