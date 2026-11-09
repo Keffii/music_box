@@ -397,8 +397,8 @@
 .guest-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 10px 12px;
   border-radius: 10px;
   background: var(--sidebar-accent);
 }
@@ -438,7 +438,7 @@
 
 .guest-actions .sign-out-button {
   flex: 1;
-  height: 32px;
+  height: 30px;
   padding: 0 8px;
   font-size: 0.82rem;
   white-space: nowrap;
