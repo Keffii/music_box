@@ -255,3 +255,131 @@
   font-weight: 600;
   text-align: center;
 }
+
+/* One-time prompt for guests to create an account, above the player on the right */
+.guest-nudge {
+  position: fixed;
+  right: 24px;
+  bottom: 140px;
+  z-index: 2500;
+  display: flex;
+  gap: 14px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 16px 16px 16px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: hsl(252, 18%, 16%);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+  color: var(--foreground);
+  animation: guest-nudge-in 0.25s ease-out;
+}
+
+@keyframes guest-nudge-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.guest-nudge-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  background: hsla(340, 70%, 75%, 0.12);
+  border: 1px solid hsla(340, 70%, 75%, 0.2);
+}
+
+.guest-nudge-body h2 {
+  margin: 2px 24px 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.guest-nudge-body p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.guest-nudge-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.guest-nudge-primary,
+.guest-nudge-secondary {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.guest-nudge-primary {
+  border: none;
+  background: hotpink;
+  color: white;
+}
+
+.guest-nudge-primary:hover,
+.guest-nudge-primary:focus-visible {
+  background: hsl(330, 100%, 74%);
+  outline: none;
+}
+
+.guest-nudge-secondary {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+.guest-nudge-secondary:hover,
+.guest-nudge-secondary:focus-visible {
+  color: var(--foreground);
+  border-color: hsl(252, 15%, 35%);
+  outline: none;
+}
+
+.guest-nudge-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.guest-nudge-close:hover,
+.guest-nudge-close:focus-visible {
+  background: var(--secondary);
+  color: var(--foreground);
+  outline: none;
+}
+
+/* Phones: the player is taller there, so sit higher, and use the full width */
+@media (max-width: 640px) {
+  .guest-nudge {
+    right: 16px;
+    left: 16px;
+    width: auto;
+    bottom: 196px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guest-nudge {
+    animation: none;
+  }
+}

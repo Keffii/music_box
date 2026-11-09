@@ -176,6 +176,29 @@
   letter-spacing: -0.01em;
 }
 
+/* Create account: what an account adds, as a short ticked list under the heading */
+.signup-perks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: -10px 0 20px;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+  color: var(--muted-foreground);
+}
+
+.signup-perks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.signup-perks svg {
+  font-size: 11px;
+  color: hsl(150, 55%, 68%);
+}
+
 /* A heading with no subtitle under it (sign-in) still needs space before the form */
 .auth-heading h1:last-child {
   margin-bottom: 24px;

@@ -389,31 +389,63 @@
   font-size: 1rem;
 }
 
-/* Guests: why to make an account, right above the buttons */
-.guest-pitch {
-  margin: 0 0 0.4rem;
-  font-size: 0.75rem;
-  line-height: 1.3;
-  text-align: center;
-  color: var(--muted-foreground);
+.user-info {
+  min-width: 0;
+}
+
+/* Guests: one card with why to make an account and the two buttons, inside the 120px footer */
+.guest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--sidebar-accent);
+}
+
+.guest-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guest-card-text strong {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--sidebar-foreground);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Guests: Sign in / Create account side by side */
-.user-info {
-  min-width: 0;
+.guest-card-text span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+
+.guest-card-text span svg {
+  font-size: 0.65rem;
 }
 
 .guest-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .guest-actions .sign-out-button {
-  padding: 0.5rem 0.5rem;
+  flex: 1;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 0.82rem;
   white-space: nowrap;
+}
+
+.guest-actions .sign-out-button.guest-create {
+  flex: 1.4;
 }
 
 .sign-out-button.guest-create {
