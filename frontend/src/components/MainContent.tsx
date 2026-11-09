@@ -109,11 +109,15 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
     return () => clearTimeout(timer);
   }, [searchQuery, route.view, navigate]);
 
-  // Refresh recently played when the song changes (live updates from the server)
+  // Refresh recently played when the song changes or playback starts (live updates from the server)
   useEffect(() => {
-    const handleSongChange = () => setTimeout(loadRecentlyPlayed, 500);
-    window.addEventListener('songChanged', handleSongChange);
-    return () => window.removeEventListener('songChanged', handleSongChange);
+    const refresh = () => setTimeout(loadRecentlyPlayed, 500);
+    window.addEventListener('songChanged', refresh);
+    window.addEventListener('playHistoryChanged', refresh);
+    return () => {
+      window.removeEventListener('songChanged', refresh);
+      window.removeEventListener('playHistoryChanged', refresh);
+    };
   }, []);
 
   const playlist = route.view === 'playlist' ? playlists.find(p => p.id === route.id) : undefined;
