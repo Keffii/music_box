@@ -35,6 +35,7 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
   const mainRef = useRef<HTMLDivElement>(null);
 
   const [recentlyPlayed, setRecentlyPlayed] = useState<Song[]>([]);
+  const [recentLoaded, setRecentLoaded] = useState(false);
   const [library, setLibrary] = useState<Song[]>([]);
   // Songs of the genre, library or playlist page being shown
   const [pageSongs, setPageSongs] = useState<Song[]>([]);
@@ -50,7 +51,8 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
 
   const loadRecentlyPlayed = async () => {
     const songs = await getRecentlyPlayed();
-    setRecentlyPlayed(songs.slice(0, 7)); // Show max 7 songs
+    setRecentlyPlayed(songs.slice(0, 7)); // Show max 7 songs (one row on wide screens)
+    setRecentLoaded(true);
   };
 
   // Recently played, and the library for the tile counts and covers
@@ -312,15 +314,28 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
             <FontAwesomeIcon icon={faClock} />
             <h2>Recently Played</h2>
           </div>
-          {recentlyPlayed.length > 0 ? (
-            <div className="card-grid">
-              {recentlyPlayed.map((song) => (
-                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, recentlyPlayed)} onOpenGenre={openGenre} />
-              ))}
+          {/* Always exactly one row of cards, so the sections below don't jump when the first song plays.
+              With no history yet, faint placeholder cards hold the space and the message sits on top. */}
+          <div className="recent-row">
+            <div className="card-grid card-grid--one-row">
+              {recentlyPlayed.length > 0
+                ? recentlyPlayed.map((song) => (
+                    <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, recentlyPlayed)} onOpenGenre={openGenre} />
+                  ))
+                : Array.from({ length: 7 }, (_, i) => (
+                    <div key={i} className="music-card music-card--placeholder" aria-hidden="true">
+                      <div className="card-image" />
+                      <div className="card-info">
+                        <h3>&nbsp;</h3>
+                        <p>&nbsp;</p>
+                      </div>
+                    </div>
+                  ))}
             </div>
-          ) : (
-            <p className="empty-state">No recently played songs yet. Start playing to see your history!</p>
-          )}
+            {recentLoaded && recentlyPlayed.length === 0 && (
+              <p className="recent-empty-note">No recently played songs yet. Start playing to see your history!</p>
+            )}
+          </div>
         </section>
 
         <section className="content-section">

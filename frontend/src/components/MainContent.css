@@ -97,6 +97,61 @@
   }
 }
 
+/* Recently Played: exactly one row at every width (extra cards are cut off rather than starting a
+   second row), so its height never changes and the sections below stay put */
+.recent-row {
+  position: relative;
+}
+
+/* Only as many cards as the grid has columns at this width (2, 3, 4, 5 or 7, see .card-grid).
+   display: none rather than clipping, so hidden cards can't be reached with Tab either. */
+.card-grid--one-row > :nth-child(n + 3) {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .card-grid--one-row > :nth-child(n + 3) { display: block; }
+  .card-grid--one-row > :nth-child(n + 4) { display: none; }
+}
+
+@media (min-width: 700px) {
+  .card-grid--one-row > :nth-child(n + 4) { display: block; }
+  .card-grid--one-row > :nth-child(n + 5) { display: none; }
+}
+
+@media (min-width: 1025px) {
+  .card-grid--one-row > :nth-child(n + 5) { display: block; }
+  .card-grid--one-row > :nth-child(n + 6) { display: none; }
+}
+
+@media (min-width: 1360px) {
+  .card-grid--one-row > :nth-child(n + 6) { display: block; }
+  .card-grid--one-row > :nth-child(n + 8) { display: none; }
+}
+
+/* Stand-ins with the exact size of a song card, shown before anything has been played */
+.music-card--placeholder {
+  cursor: default;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.music-card--placeholder .card-image {
+  box-shadow: none;
+}
+
+.recent-empty-note {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 16px;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+
 .music-card {
   background-color: var(--card);
   border: 1px solid var(--border);
