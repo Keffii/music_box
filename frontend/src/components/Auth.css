@@ -189,6 +189,10 @@
   .auth-page--compact .auth-heading h1:last-child {
     margin-bottom: 14px;
   }
+
+  .auth-page--compact .auth-card {
+    padding-bottom: 18px;
+  }
 }
 
 @media (max-height: 620px) {
