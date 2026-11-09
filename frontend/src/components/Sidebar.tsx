@@ -239,9 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
             <FontAwesomeIcon icon={faUser} />
           </div>
           <div className="user-info">
-            <div className="user-name">{displayName(user?.username)}</div>
-            {isGuest && <div className="user-hint">Your playlists are saved in this browser</div>}
-          </div>
+            <div className="user-name">{displayName(user?.username)}</div>          </div>
         </div>
         {isGuest ? (
           // No account yet: everything works, and signing in keeps what they've made

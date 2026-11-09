@@ -389,15 +389,7 @@
   font-size: 1rem;
 }
 
-/* Guests: a short note under "Guest", and Sign in / Create account side by side */
-.user-hint {
-  font-size: 0.72rem;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
+/* Guests: Sign in / Create account side by side */
 .user-info {
   min-width: 0;
 }
