@@ -169,6 +169,34 @@
   transform: translateX(-2px);
 }
 
+/* "Back to Music Box" (a guest on the sign-in screen): in the page's top-left corner, outside the
+   card, so the card keeps its size and position */
+.auth-back.auth-back--corner {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  margin: 0;
+}
+
+/* Short sign-up: tighter still, and on very short screens the ticked list gives way */
+@media (max-height: 720px) {
+  .auth-page--compact .signup-perks {
+    gap: 2px;
+    margin-bottom: 10px;
+  }
+
+  .auth-page--compact .auth-heading h1:last-child {
+    margin-bottom: 14px;
+  }
+}
+
+@media (max-height: 620px) {
+  .auth-page--compact .signup-perks {
+    display: none;
+  }
+}
+
 .auth-heading h1 {
   margin: 0 0 8px;
   font-size: 28px;
