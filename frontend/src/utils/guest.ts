@@ -17,6 +17,32 @@ export const displayName = (username?: string) => (isGuestUsername(username) ? '
 const randomHex = (bytes: number) =>
   Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (b) => b.toString(16).padStart(2, '0')).join('');
 
+/**
+ * The guest's username and password, kept in this browser so the same guest (and their playlists)
+ * comes back on the next visit, and so the guest session can be restored if signing in to a real
+ * account fails. It's a throwaway account, so nothing of value is exposed.
+ */
+const STORAGE_KEY = 'musicbox-guest';
+
+export interface GuestCredentials { username: string; email: string; password: string }
+
+export const loadGuest = (): GuestCredentials | null => {
+  try {
+    const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    return value && isGuestUsername(value.username) && value.password ? value : null;
+  } catch {
+    return null;
+  }
+};
+
+export const saveGuest = (credentials: GuestCredentials) => {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(credentials)); } catch { /* private mode: guest lasts this session */ }
+};
+
+export const clearGuest = () => {
+  try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+};
+
 /** A fresh username, email and password. The password is never shown; the session keeps the guest signed in. */
 export const newGuestCredentials = () => {
   const username = `${GUEST_PREFIX}${randomHex(5)}`;

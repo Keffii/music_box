@@ -11,7 +11,8 @@ import {
   confirmResetPassword,
 } from 'aws-amplify/auth';
 import { friendlyAuthError } from '../utils/authErrors';
-import { newGuestCredentials } from '../utils/guest';
+import { newGuestCredentials, loadGuest, saveGuest, clearGuest } from '../utils/guest';
+import { API_BASE } from '../utils/constants';
 
 // Configure Amplify (this will be called from index.tsx)
 export const configureAmplify = () => {
@@ -105,9 +106,22 @@ export const authService = {
     }
   },
 
-  // Create a throwaway guest account and sign in with it (see utils/guest.ts)
+  // Sign in as a guest: the same guest as last time in this browser if there is one, otherwise a new
+  // throwaway account (see utils/guest.ts)
   async signInAsGuest(): Promise<AuthResult> {
-    const { username, email, password } = newGuestCredentials();
+    const saved = loadGuest();
+    if (saved) {
+      try {
+        const { isSignedIn } = await signIn({ username: saved.username, password: saved.password });
+        if (isSignedIn) return { success: true };
+      } catch {
+        // e.g. the guest account was removed: fall through and make a new one
+      }
+      clearGuest();
+    }
+
+    const credentials = newGuestCredentials();
+    const { username, email, password } = credentials;
     try {
       const { nextStep } = await signUp({ username, password, options: { userAttributes: { email } } });
       if (nextStep.signUpStep !== 'DONE' && nextStep.signUpStep !== 'COMPLETE_AUTO_SIGN_IN') {
@@ -115,9 +129,30 @@ export const authService = {
         return { success: false, error: "Guest sign-in isn't available right now. Create an account instead." };
       }
       const { isSignedIn } = await signIn({ username, password });
-      return isSignedIn ? { success: true } : { success: false, error: 'Guest sign-in failed. Try again.' };
+      if (!isSignedIn) return { success: false, error: 'Guest sign-in failed. Try again.' };
+      saveGuest(credentials);
+      return { success: true };
     } catch (error: any) {
       return failure(error, 'Guest sign in error');
+    }
+  },
+
+  // After a guest signs in to a real account: move the guest's playlists, favourites and history to it.
+  // guestToken is the guest session's ID token, taken before switching accounts.
+  async claimGuestData(guestToken: string): Promise<boolean> {
+    try {
+      const session = await fetchAuthSession();
+      const token = session.tokens?.idToken?.toString();
+      if (!token) return false;
+      const res = await fetch(`${API_BASE}/api/account/claim-guest`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestToken }),
+      });
+      return res.ok;
+    } catch (error) {
+      console.error('Moving guest data failed:', error);
+      return false;
     }
   },
 

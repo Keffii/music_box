@@ -131,9 +131,12 @@ Cognito's built-in email (50 per day, plenty for a portfolio site).
   every user signing up again.
 - The Lite tier is free up to 10,000 monthly active users.
 
-#### Guest sign-in (optional)
-"Sign in as guest" creates a throwaway account per visitor (`guest-…`, email `…@guest.invalid`).
-A pre-sign-up Lambda confirms those accounts without an email code; everyone else is unaffected.
+#### Guest sessions (optional, but the site expects them)
+An account is optional, as on Spotify or Apple Music: every visitor without one automatically
+gets their own throwaway guest account (`guest-…`, email `…@guest.invalid`). The browser keeps the
+guest's login, so the same guest comes back on the next visit. Signing in or creating an account
+later moves the guest's playlists, favourites and history to it (`POST /api/account/claim-guest`).
+A pre-sign-up Lambda confirms guest accounts without an email code; everyone else is unaffected.
 ```
 cd infra/aws/guest-pre-signup && tar -a -cf ../guest-pre-signup.zip index.mjs && cd ../../..
 aws iam create-role --role-name music-box-guest-pre-signup --assume-role-policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
@@ -142,11 +145,13 @@ aws lambda create-function --function-name music-box-guest-pre-signup --runtime 
 ```
 Then attach it in the console: **Cognito → User pools → your pool → Extensions → Add Lambda trigger →
 Sign-up → Pre sign-up trigger →** `music-box-guest-pre-signup`. The console also grants Cognito
-permission to call it. (Don't use `aws cognito-idp update-user-pool --lambda-config`: it resets
-every pool setting you leave out.)
+permission to call it. (With the CLI, `aws cognito-idp update-user-pool` resets every pool setting
+you leave out: pass a full copy of `describe-user-pool`'s updatable settings plus `LambdaConfig`,
+and run `aws lambda add-permission --principal cognito-idp.amazonaws.com` yourself.)
 
 Finally add `REACT_APP_GUEST_SIGN_IN` = `true` to the Amplify environment variables (step 3 below)
-and redeploy. The button stays hidden without it, so no guest sign-up can hit a pool without the trigger.
+and redeploy. Without it the site shows the sign-in screen first, as before, so no guest sign-up can
+hit a pool without the trigger.
 
 ### 2.4 RDS MySQL database
 Choose a strong password without `/`, `@`, `"` or spaces.
