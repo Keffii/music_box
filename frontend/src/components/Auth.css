@@ -687,8 +687,8 @@
   }
 }
 
-/* Very short screens: sign-up drops the hints under the fields */
-@media (max-height: 640px) {
+/* Short screens: sign-up drops the hints under the fields (the ticked list above says the main things) */
+@media (max-height: 720px) {
   .auth-page--compact .form-hint {
     display: none;
   }
