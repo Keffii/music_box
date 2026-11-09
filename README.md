@@ -12,7 +12,7 @@
 </p>
 
 ## Website
-**Live: <https://aws-redeploy.d21a9pclwaleru.amplifyapp.com>**
+**Live: <https://musicbox.website>**
 
 Sign up with an email address to try it. Cognito emails you a confirmation code.
 
