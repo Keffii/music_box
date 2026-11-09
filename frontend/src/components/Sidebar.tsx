@@ -18,12 +18,15 @@ interface SidebarProps {
   /** Phones and tablets: whether the slide-in menu is open */
   isOpen?: boolean;
   onClose?: () => void;
+  /** Guests: open the sign-in / create-account screens */
+  onSignIn?: () => void;
+  onCreateAccount?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistClick, selectedPlaylistId, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistClick, selectedPlaylistId, isOpen, onClose, onSignIn, onCreateAccount }) => {
   const { favorites } = useFavorites();
   const { playlists, createPlaylist, deletePlaylist } = usePlaylists();
-  const { user, signOut } = useAuth();
+  const { user, isGuest, signOut } = useAuth();
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [hoveredFavoriteId, setHoveredFavoriteId] = useState<number | null>(null);
@@ -237,12 +240,25 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
           </div>
           <div className="user-info">
             <div className="user-name">{displayName(user?.username)}</div>
+            {isGuest && <div className="user-hint">Your playlists are saved in this browser</div>}
           </div>
         </div>
-        <button className="sign-out-button" onClick={signOut}>
-          <FontAwesomeIcon icon={faSignOutAlt} />
-          <span>Sign Out</span>
-        </button>
+        {isGuest ? (
+          // No account yet: everything works, and signing in keeps what they've made
+          <div className="guest-actions">
+            <button type="button" className="sign-out-button" onClick={() => { onClose?.(); onSignIn?.(); }}>
+              Sign in
+            </button>
+            <button type="button" className="sign-out-button guest-create" onClick={() => { onClose?.(); onCreateAccount?.(); }}>
+              Create account
+            </button>
+          </div>
+        ) : (
+          <button className="sign-out-button" onClick={signOut}>
+            <FontAwesomeIcon icon={faSignOutAlt} />
+            <span>Sign Out</span>
+          </button>
+        )}
       </div>
     </div>
   );

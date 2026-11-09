@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AuthLayout } from './AuthLayout';
-import { AuthAlert, PasswordField, SubmitButton } from './AuthParts';
+import { AuthAlert, BackButton, PasswordField, SubmitButton } from './AuthParts';
 import { ConfirmEmailStep } from './ConfirmEmailStep';
 import { GUEST_SIGN_IN_ENABLED } from '../../utils/guest';
 
@@ -10,9 +10,11 @@ interface LoginProps {
   onForgotPassword: () => void;
   /** A message to show on arrival, e.g. after a password reset */
   notice?: string;
+  /** A guest who opened this from the app: shows "Back to Music Box" */
+  onClose?: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onForgotPassword, notice: initialNotice }) => {
+const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onForgotPassword, notice: initialNotice, onClose }) => {
   const { signIn, signInAsGuest } = useAuth();
   const [guestLoading, setGuestLoading] = useState(false);
   const [identifier, setIdentifier] = useState('');
@@ -65,6 +67,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onForgotPassword, notic
 
   return (
     <AuthLayout showFeatures>
+      {onClose && <BackButton onClick={onClose} label="Back to Music Box" />}
       <div className="auth-heading">
         <h1>Sign in</h1>
       </div>
@@ -105,7 +108,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onForgotPassword, notic
         <SubmitButton loading={loading} disabled={guestLoading}>{loading ? 'Signing in…' : 'Sign in'}</SubmitButton>
       </form>
 
-      {GUEST_SIGN_IN_ENABLED && (
+      {/* Only when there's no session at all; a guest opening this screen already is one */}
+      {GUEST_SIGN_IN_ENABLED && !onClose && (
         <>
           <div className="auth-divider"><span>or</span></div>
           <button

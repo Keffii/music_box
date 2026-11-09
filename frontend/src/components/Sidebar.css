@@ -389,3 +389,39 @@
   font-size: 1rem;
 }
 
+/* Guests: a short note under "Guest", and Sign in / Create account side by side */
+.user-hint {
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-info {
+  min-width: 0;
+}
+
+.guest-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.guest-actions .sign-out-button {
+  padding: 0.5rem 0.5rem;
+  white-space: nowrap;
+}
+
+.sign-out-button.guest-create {
+  border-color: transparent;
+  background: hotpink;
+  color: white;
+  font-weight: 600;
+}
+
+.sign-out-button.guest-create:hover {
+  background: hsl(330, 100%, 74%);
+  border-color: transparent;
+  color: white;
+}
+
