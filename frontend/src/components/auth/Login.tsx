@@ -67,7 +67,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onForgotPassword, notic
 
   return (
     <AuthLayout showFeatures>
-      {onClose && <BackButton onClick={onClose} label="Back to Music Box" />}
+      {/* In the page's corner, not the card, so sign-in keeps its size and still fits without scrolling */}
+      {onClose && <BackButton onClick={onClose} label="Back to Music Box" className="auth-back--corner" />}
       <div className="auth-heading">
         <h1>Sign in</h1>
       </div>

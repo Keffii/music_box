@@ -4,8 +4,8 @@ import { faEye, faEyeSlash, faCircle } from '@fortawesome/free-regular-svg-icons
 import { faCircleCheck, faCircleExclamation, faCircleInfo, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
 /** The ← button at the top of a card, back to the sign-in screen (or the previous step) */
-export const BackButton: React.FC<{ onClick: () => void; label?: string }> = ({ onClick, label = 'Back to sign in' }) => (
-  <button type="button" className="auth-back" onClick={onClick}>
+export const BackButton: React.FC<{ onClick: () => void; label?: string; className?: string }> = ({ onClick, label = 'Back to sign in', className }) => (
+  <button type="button" className={`auth-back${className ? ` ${className}` : ''}`} onClick={onClick}>
     <FontAwesomeIcon icon={faArrowLeft} />
     {label}
   </button>
