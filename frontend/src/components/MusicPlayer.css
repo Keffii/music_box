@@ -228,6 +228,54 @@
   color: var(--foreground);
 }
 
+/* Holds the volume slider and the percentage bubble above its thumb */
+.volume-slider-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.volume-bubble {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  transform: translate(-50%, 4px);
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+/* Small arrow pointing down at the thumb */
+.volume-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--foreground);
+}
+
+.volume-bubble.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .volume-bubble {
+    transition: none;
+  }
+}
+
 .grafana-link {
   color: var(--muted-foreground);
   transition: color 0.2s;
