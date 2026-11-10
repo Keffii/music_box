@@ -10,6 +10,8 @@ interface PlayerRightSectionProps {
   volumeSliderRef: React.RefObject<HTMLInputElement | null>;
   onVolumeChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onVolumeChangeEnd: () => void;
+  /** Steps the volume up or down (the mouse wheel) */
+  onVolumeBy: (delta: number) => void;
   onMute: () => void;
   onShowShortcuts: () => void;
 }
@@ -20,6 +22,7 @@ export const PlayerRightSection: React.FC<PlayerRightSectionProps> = ({
   volumeSliderRef,
   onVolumeChange,
   onVolumeChangeEnd,
+  onVolumeBy,
   onMute,
   onShowShortcuts,
 }) => {
@@ -40,6 +43,7 @@ export const PlayerRightSection: React.FC<PlayerRightSectionProps> = ({
         volumeSliderRef={volumeSliderRef}
         onVolumeChange={onVolumeChange}
         onVolumeChangeEnd={onVolumeChangeEnd}
+        onVolumeBy={onVolumeBy}
         onMute={onMute}
       />
       {GRAFANA_URL && (

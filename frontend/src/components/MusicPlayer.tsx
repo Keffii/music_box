@@ -150,6 +150,20 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ onOpenSearch }) => {
   const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
   const volumeSendTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Arrow keys and the mouse wheel: change it here at once, tell the server when they stop
+  const changeVolumeBy = (delta: number) => {
+    const next = Math.max(0, Math.min(100, (isMuted ? 0 : volume) + delta));
+    setUserAdjustingVolume(true);
+    setVolume(next);
+    setIsMuted(next === 0);
+    if (audioRef.current) audioRef.current.volume = next / 100;
+    if (volumeSendTimer.current) clearTimeout(volumeSendTimer.current);
+    volumeSendTimer.current = setTimeout(() => {
+      sendCommand(`VOLUME:${next}`);
+      setUserAdjustingVolume(false);
+    }, 400);
+  };
+
   useKeyboardShortcuts({
     playPause: handlePlayPause,
     next: () => sendCommand('NEXT'),
@@ -160,19 +174,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ onOpenSearch }) => {
       audio.currentTime = Math.max(0, Math.min(audio.currentTime + seconds, audio.duration));
       setCurrentTime(audio.currentTime);
     },
-    volumeBy: (delta) => {
-      const next = Math.max(0, Math.min(100, (isMuted ? 0 : volume) + delta));
-      // Same as dragging the slider: change it here at once, tell the server when the keys stop
-      setUserAdjustingVolume(true);
-      setVolume(next);
-      setIsMuted(next === 0);
-      if (audioRef.current) audioRef.current.volume = next / 100;
-      if (volumeSendTimer.current) clearTimeout(volumeSendTimer.current);
-      volumeSendTimer.current = setTimeout(() => {
-        sendCommand(`VOLUME:${next}`);
-        setUserAdjustingVolume(false);
-      }, 400);
-    },
+    volumeBy: changeVolumeBy,
     toggleMute: () => sendCommand('MUTE'),
     toggleShuffle: () => {
       sendCommand('SHUFFLE');
@@ -233,6 +235,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ onOpenSearch }) => {
         volumeSliderRef={volumeSliderRef}
         onVolumeChange={handleVolumeChange}
         onVolumeChangeEnd={handleVolumeChangeEnd}
+        onVolumeBy={changeVolumeBy}
         onMute={handleMute}
         onShowShortcuts={() => setShowShortcuts(true)}
       />
