@@ -20,9 +20,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Left and right share the space the controls don't need (equal, so play stays centred) */
+  flex: 1 1 0;
   min-width: 0;
-  flex: 0 0 300px;
-  width: 300px;
+  max-width: 300px;
 }
 
 .player-album-art {
@@ -71,8 +72,9 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  flex: 1;
-  max-width: 672px;
+  /* Always wide enough for all seven controls */
+  flex: 0 1 auto;
+  width: clamp(340px, 45%, 672px);
 }
 
 .player-controls {
@@ -156,15 +158,46 @@
 .player-time:last-child {
   text-align: left;
 }
-/* Right Section - Volume */
+/* Right Section - keyboard shortcuts & volume */
 .player-right {
   display: flex;
   align-items: center;
   gap: 12px;
   justify-content: flex-end;
-  flex: 0 0 300px;
-  width: 300px;
-} 
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 300px;
+}
+
+/* Opens the keyboard shortcuts list. Hidden on touch screens, which have no keyboard. */
+.player-shortcuts-button {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.player-shortcuts-button:hover,
+.player-shortcuts-button:focus-visible {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+@media (hover: none) {
+  .player-shortcuts-button {
+    display: none;
+  }
+}
 
 .player-volume-container {
   display: flex;
@@ -175,6 +208,10 @@
 }
 
 .player-volume-icon {
+  background: none;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
   color: var(--muted-foreground);
   cursor: pointer;
   transition: color 0.2s ease;
@@ -190,7 +227,6 @@
 .player-volume-icon:hover {
   color: var(--foreground);
 }
-
 
 /* Hidden audio element */
 audio {
@@ -348,4 +384,66 @@ input[type="range"] {
   background: var(--primary); /* Dot color */
   border-radius: 50%;       /* Keep circular */
   cursor: pointer;
+}
+/* ---------- Phones and tablets ---------- */
+
+/* The sidebar is a slide-in menu here, so the player spans the full width */
+@media (max-width: 1024px) {
+  .music-player {
+    left: 0;
+    padding: 0 16px;
+    gap: 16px;
+  }
+}
+
+/* Phones: song, controls and progress on three rows; volume uses the phone's buttons */
+@media (max-width: 640px) {
+  .music-player {
+    height: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    gap: 4px;
+  }
+
+  .player-left {
+    flex: 1 1 100%;
+    max-width: none;
+    gap: 10px;
+  }
+
+  .player-album-art {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+  }
+
+  .player-song-title {
+    font-size: 15px;
+  }
+
+  .player-song-artist {
+    margin-top: 0;
+    font-size: 12px;
+  }
+
+  .player-center {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .player-progress-container {
+    max-width: none;
+  }
+
+  .player-right {
+    display: none;
+  }
+}
+
+/* Very narrow phones (e.g. 320px): tighter spacing so all seven controls still fit */
+@media (max-width: 360px) {
+  .player-controls {
+    gap: 4px;
+  }
 }

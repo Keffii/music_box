@@ -1,9 +1,31 @@
 import { API_BASE } from '../utils/constants';
-import { authFetch } from './authService';
+
+/**
+ * fetch for the backend API. The local demo has no accounts, so no token is sent; a JSON body
+ * gets its Content-Type set.
+ */
+const apiFetch = (input: string, init: RequestInit = {}): Promise<Response> => {
+  const headers = new Headers(init.headers);
+  if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  return fetch(input, { ...init, headers });
+};
+
+export const renamePlaylist = async (playlistId: number, name: string): Promise<boolean> => {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/playlists/${playlistId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name })
+    });
+    return res.ok;
+  } catch (error) {
+    console.error('Failed to rename playlist:', error);
+    return false;
+  }
+};
 
 export const sendCommand = async (cmd: string): Promise<void> => {
   try {
-    await authFetch(`${API_BASE}/api/player/command`, {
+    await apiFetch(`${API_BASE}/api/player/command`, {
       method: 'POST',
       body: JSON.stringify({ command: cmd })
     });
@@ -15,7 +37,7 @@ export const sendCommand = async (cmd: string): Promise<void> => {
 
 export const loadSongs = async () => {
   try {
-    const res = await authFetch(`${API_BASE}/api/player/songs`);
+    const res = await apiFetch(`${API_BASE}/api/player/songs`);
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : [];
@@ -27,7 +49,7 @@ export const loadSongs = async () => {
 
 export const loadSongsByCategory = async (category: string) => {
   try {
-    const res = await authFetch(`${API_BASE}/api/player/songs/category/${encodeURIComponent(category)}`);
+    const res = await apiFetch(`${API_BASE}/api/player/songs/category/${encodeURIComponent(category)}`);
     const data = await res.json();
     return data;
   } catch (error) {
@@ -41,7 +63,7 @@ export const searchSongs = async (query: string) => {
     if (!query || query.trim().length === 0) {
       return [];
     }
-    const res = await authFetch(`${API_BASE}/api/player/songs/search?query=${encodeURIComponent(query.trim())}`);
+    const res = await apiFetch(`${API_BASE}/api/player/songs/search?query=${encodeURIComponent(query.trim())}`);
     const data = await res.json();
     return data;
   } catch (error) {
@@ -52,7 +74,7 @@ export const searchSongs = async (query: string) => {
 
 export const getRecentlyPlayed = async () => {
   try {
-    const res = await authFetch(`${API_BASE}/api/player/recently-played`);
+    const res = await apiFetch(`${API_BASE}/api/player/recently-played`);
     if (!res.ok) {
       throw new Error(`Failed to fetch recently played: ${res.status}`);
     }
@@ -66,7 +88,7 @@ export const getRecentlyPlayed = async () => {
 // Favorites API
 export const getFavorites = async () => {
   try {
-    const res = await authFetch(`${API_BASE}/api/favorites`);
+    const res = await apiFetch(`${API_BASE}/api/favorites`);
     if (!res.ok) {
       throw new Error(`Failed to fetch favorites: ${res.status}`);
     }
@@ -80,7 +102,7 @@ export const getFavorites = async () => {
 
 export const addFavorite = async (songId: number): Promise<boolean> => {
   try {
-    const res = await authFetch(`${API_BASE}/api/favorites/${songId}`, {
+    const res = await apiFetch(`${API_BASE}/api/favorites/${songId}`, {
       method: 'POST',
     });
     if (!res.ok) {
@@ -96,7 +118,7 @@ export const addFavorite = async (songId: number): Promise<boolean> => {
 
 export const removeFavorite = async (songId: number): Promise<boolean> => {
   try {
-    const res = await authFetch(`${API_BASE}/api/favorites/${songId}`, {
+    const res = await apiFetch(`${API_BASE}/api/favorites/${songId}`, {
       method: 'DELETE',
     });
     if (!res.ok) {
@@ -112,7 +134,7 @@ export const removeFavorite = async (songId: number): Promise<boolean> => {
 
 export const checkFavorite = async (songId: number): Promise<boolean> => {
   try {
-    const res = await authFetch(`${API_BASE}/api/favorites/check/${songId}`);
+    const res = await apiFetch(`${API_BASE}/api/favorites/check/${songId}`);
     if (!res.ok) {
       throw new Error(`Failed to check favorite: ${res.status}`);
     }
@@ -127,7 +149,7 @@ export const checkFavorite = async (songId: number): Promise<boolean> => {
 // Playlist API
 export const getPlaylists = async () => {
   try {
-    const res = await authFetch(`${API_BASE}/api/playlists/with-counts`);
+    const res = await apiFetch(`${API_BASE}/api/playlists/with-counts`);
     if (!res.ok) {
       throw new Error(`Failed to fetch playlists: ${res.status}`);
     }
@@ -140,7 +162,7 @@ export const getPlaylists = async () => {
 
 export const createPlaylist = async (name: string): Promise<boolean> => {
   try {
-    const res = await authFetch(`${API_BASE}/api/playlists`, {
+    const res = await apiFetch(`${API_BASE}/api/playlists`, {
       method: 'POST',
       body: JSON.stringify({ name })
     });
@@ -153,7 +175,7 @@ export const createPlaylist = async (name: string): Promise<boolean> => {
 
 export const deletePlaylist = async (playlistId: number): Promise<boolean> => {
   try {
-    const res = await authFetch(`${API_BASE}/api/playlists/${playlistId}`, {
+    const res = await apiFetch(`${API_BASE}/api/playlists/${playlistId}`, {
       method: 'DELETE',
     });
     return res.ok;
@@ -165,14 +187,14 @@ export const deletePlaylist = async (playlistId: number): Promise<boolean> => {
 
 export const addSongToPlaylist = async (playlistId: number, songId: number): Promise<{ success: boolean; playlistName?: string; alreadyExists?: boolean }> => {
   try {
-    const res = await authFetch(`${API_BASE}/api/playlists/${playlistId}/songs/${songId}`, {
+    const res = await apiFetch(`${API_BASE}/api/playlists/${playlistId}/songs/${songId}`, {
       method: 'POST',
     });
     
     if (res.ok) {
       const data = await res.json();
       // Fetch the playlist name for the toast
-      const playlistsRes = await authFetch(`${API_BASE}/api/playlists`);
+      const playlistsRes = await apiFetch(`${API_BASE}/api/playlists`);
       if (playlistsRes.ok) {
         const playlists = await playlistsRes.json();
         const playlist = playlists.find((p: any) => p.id === playlistId);
@@ -193,7 +215,7 @@ export const addSongToPlaylist = async (playlistId: number, songId: number): Pro
 
 export const removeSongFromPlaylist = async (playlistId: number, songId: number): Promise<boolean> => {
   try {
-    const res = await authFetch(`${API_BASE}/api/playlists/${playlistId}/songs/${songId}`, {
+    const res = await apiFetch(`${API_BASE}/api/playlists/${playlistId}/songs/${songId}`, {
       method: 'DELETE',
     });
     return res.ok;
@@ -205,7 +227,7 @@ export const removeSongFromPlaylist = async (playlistId: number, songId: number)
 
 export const getPlaylistSongs = async (playlistId: number) => {
   try {
-    const res = await authFetch(`${API_BASE}/api/playlists/${playlistId}/songs`);
+    const res = await apiFetch(`${API_BASE}/api/playlists/${playlistId}/songs`);
     if (!res.ok) {
       throw new Error(`Failed to fetch playlist songs: ${res.status}`);
     }
@@ -218,7 +240,7 @@ export const getPlaylistSongs = async (playlistId: number) => {
 
 export const setPlaylistQueue = async (songIds: number[]): Promise<boolean> => {
   try {
-    const res = await authFetch(`${API_BASE}/api/player/playlist-queue`, {
+    const res = await apiFetch(`${API_BASE}/api/player/playlist-queue`, {
       method: 'POST',
       body: JSON.stringify({ songIds })
     });
@@ -244,7 +266,7 @@ export const playSpecificSong = async (songId: number, queueSongIds: number[]): 
     ];
     
     // Set the reordered queue - backend will automatically start playing the first song
-    const res = await authFetch(`${API_BASE}/api/player/playlist-queue`, {
+    const res = await apiFetch(`${API_BASE}/api/player/playlist-queue`, {
       method: 'POST',
       body: JSON.stringify({ songIds: reorderedQueue })
     });

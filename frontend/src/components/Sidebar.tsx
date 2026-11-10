@@ -2,24 +2,26 @@ import React, { useState } from 'react';
 import './Sidebar.css';
 import { useFavorites } from '../context/FavoritesContext';
 import { usePlaylists } from '../context/PlaylistContext';
-import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMusic, faHome, faSearch, faPlus, faHeart, faSignOutAlt, faUser, faTrash, faPlay } from '@fortawesome/free-solid-svg-icons';
+import { faMusic, faHome, faSearch, faPlus, faHeart, faTrash, faPlay, faTowerBroadcast } from '@fortawesome/free-solid-svg-icons';
+import { coverOf } from '../utils/helpers';
 import { Song } from '../types/music.types';
 import { playSpecificSong } from '../services/playerService';
-import { coverOf } from '../utils/helpers';
 
 interface SidebarProps {
   onNavigate: (view: 'home' | 'category' | 'search' | 'playlist' | 'all-songs') => void;
   currentView: 'home' | 'category' | 'search' | 'playlist' | 'all-songs';
   onPlaylistClick?: (playlistId: number, playlistName: string) => void;
+  selectedPlaylistId?: number | null;
+  /** Phones and tablets: whether the slide-in menu is open */
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistClick }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistClick, selectedPlaylistId, isOpen, onClose }) => {
   const { favorites } = useFavorites();
   const { playlists, createPlaylist, deletePlaylist } = usePlaylists();
-  const { user, signOut } = useAuth();
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [hoveredFavoriteId, setHoveredFavoriteId] = useState<number | null>(null);
@@ -37,19 +39,24 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
   const handleDeletePlaylist = async (playlistId: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this playlist?')) {
-      await deletePlaylist(playlistId);
+      const deleted = await deletePlaylist(playlistId);
+      // Don't stay on the page of a playlist that no longer exists
+      if (deleted && currentView === 'playlist' && playlistId === selectedPlaylistId) {
+        onNavigate('home');
+      }
     }
   };
 
   const handleFavoriteSongClick = async (song: Song) => {
     const songIds = favorites.map(s => s.id);
+    onClose?.();
     await playSpecificSong(song.id, songIds);
   };
   
   return (
-    <div className="sidebar">
+    <div className={`sidebar${isOpen ? ' open' : ''}`}>
       <div className="sidebar-header">
-        <img src={logo} alt="MusicBox Logo" className="sidebar-logo"/>
+        <img src={logo} alt="Music Box logo" className="sidebar-logo"/>
         <h1>Music Box</h1>
       </div>
 
@@ -67,10 +74,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
       <div className="sidebar-section">
         <div className="section-header">
           <h3>PLAYLISTS</h3>
-          <FontAwesomeIcon 
-            icon={faPlus} 
+          <FontAwesomeIcon
+            icon={faPlus}
+            className="section-action"
             onClick={() => setShowCreatePlaylist(!showCreatePlaylist)}
-            style={{ cursor: 'pointer' }}
+            title="Create playlist"
           />
         </div>
         {showCreatePlaylist && (
@@ -96,18 +104,25 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
         )}
         <ul className="playlist-list">
           {playlists.length === 0 ? (
-            <li className="playlist-item" style={{ opacity: 0.5 }}>
+            <li
+              className="playlist-item playlist-empty"
+              role="button"
+              tabIndex={0}
+              onClick={() => setShowCreatePlaylist(true)}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShowCreatePlaylist(true)}
+              title="Create playlist"
+            >
               <FontAwesomeIcon icon={faMusic} />
               <div>
                 <div className="playlist-name">No playlists yet</div>
-                <div className="playlist-count">Click + to create one</div>
+                <div className="playlist-count">Click here or + to create one</div>
               </div>
             </li>
           ) : (
             playlists.map(playlist => (
-              <li 
-                key={playlist.id} 
-                className="playlist-item" 
+              <li
+                key={playlist.id}
+                className={`playlist-item${currentView === 'playlist' && playlist.id === selectedPlaylistId ? ' active' : ''}`}
                 style={{ position: 'relative', cursor: 'pointer' }}
                 onClick={() => {
                   if (onPlaylistClick) {
@@ -118,7 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
                 <FontAwesomeIcon icon={faMusic} />
                 <div style={{ flex: 1 }}>
                   <div className="playlist-name">{playlist.name}</div>
-                  <div className="playlist-count">{playlist.songCount} songs</div>
+                  <div className="playlist-count">{playlist.songCount} song{playlist.songCount !== 1 ? 's' : ''}</div>
                 </div>
                 <FontAwesomeIcon 
                   icon={faTrash} 
@@ -127,7 +142,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
                     fontSize: '12px',
                     opacity: 0.6,
                     cursor: 'pointer',
-                    padding: '4px'
+                    padding: '4px',
+                    transition: 'opacity 0.2s ease'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
                   onMouseLeave={(e) => e.currentTarget.style.opacity = '0.6'}
@@ -159,9 +175,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
                 onMouseLeave={() => setHoveredFavoriteId(null)}
                 style={{ cursor: 'pointer', position: 'relative' }}
               >
+                {song.coverUrl && (
                   <div style={{ position: 'relative', flexShrink: 0, width: '40px', height: '40px', lineHeight: 0 }}>
-                    <img 
-                      src={coverOf(song)} 
+                    <img
+                      src={coverOf(song)}
                       alt={song.title}
                       className="favorite-cover"
                       style={{
@@ -172,8 +189,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
                         display: 'block'
                       }}
                     />
-                    {hoveredFavoriteId === song.id && (
-                      <div style={{
+                    {(
+                      <div className={`hover-overlay${hoveredFavoriteId === song.id ? ' visible' : ''}`} style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
@@ -200,6 +217,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
                       </div>
                     )}
                   </div>
+                )}
                 <div className="favorite-text">
                   <div className="favorite-name">{song.title}</div>
                   <div className="favorite-artist">{song.artist}</div>
@@ -210,19 +228,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, onPlaylistCl
         </ul>
       </div>
 
+      {/* No accounts in the local demo: say how the shared player works instead */}
       <div className="sidebar-footer">
-        <div className="user-profile">
-          <div className="user-avatar">
-            <FontAwesomeIcon icon={faUser} />
-          </div>
-          <div className="user-info">
-            <div className="user-name">{user?.username || 'User'}</div>
+        <div className="demo-card">
+          <span className="demo-card-icon" aria-hidden="true">
+            <FontAwesomeIcon icon={faTowerBroadcast} />
+          </span>
+          <div className="demo-card-text">
+            <strong>One shared player</strong>
+            <span>Every open browser and the ESP32 remote control the same music.</span>
           </div>
         </div>
-        <button className="sign-out-button" onClick={signOut}>
-          <FontAwesomeIcon icon={faSignOutAlt} />
-          <span>Sign Out</span>
-        </button>
       </div>
     </div>
   );

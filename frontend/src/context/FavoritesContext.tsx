@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
 import { getFavorites as apiFetchFavorites, addFavorite as apiAddFavorite, removeFavorite as apiRemoveFavorite } from '../services/playerService';
 
 interface Song {
@@ -22,43 +21,15 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 
 export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [favorites, setFavorites] = useState<Song[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load favorites from backend when user logs in
+  // The shared demo library's favourites (no accounts locally)
   useEffect(() => {
-    const loadFavorites = async () => {
-      if (!user) {
-        // User logged out - clear favorites
-        setFavorites([]);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const data = await apiFetchFavorites();
-        setFavorites(data);
-      } catch (error) {
-        console.error('Failed to load favorites:', error);
-        // Fallback to localStorage for offline/error scenarios
-        const saved = localStorage.getItem(`musicbox-favorites-${user.userId}`);
-        if (saved) {
-          setFavorites(JSON.parse(saved));
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadFavorites();
-  }, [user]);
-
-  // Backup to localStorage whenever favorites change (offline fallback)
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(`musicbox-favorites-${user.userId}`, JSON.stringify(favorites));
-    }
-  }, [favorites, user]);
+    apiFetchFavorites()
+      .then((data) => setFavorites(Array.isArray(data) ? data : []))
+      .catch((error) => console.error('Failed to load favorites:', error))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const addFavorite = async (song: Song) => {
     // Optimistic update - add to UI immediately

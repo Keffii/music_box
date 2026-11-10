@@ -1,669 +1,392 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './MainContent.css';
-import { loadSongsByCategory, getRecentlyPlayed, searchSongs, getPlaylistSongs, setPlaylistQueue, playSpecificSong, loadSongs } from '../services/playerService';
+import { loadSongsByCategory, getRecentlyPlayed, searchSongs, getPlaylistSongs, setPlaylistQueue, playSpecificSong, loadSongs, removeSongFromPlaylist } from '../services/playerService';
 import { Song } from '../types/music.types';
-import { coverOf } from '../utils/helpers';
+import { SongCard } from './SongCard';
+import { BrowseTile } from './BrowseTile';
+import { PageHero } from './PageHero';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faCompass, faPlay, faMusic } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCompass, faMusic, faPen, faRecordVinyl, faListUl } from '@fortawesome/free-solid-svg-icons';
 import { faClock } from '@fortawesome/free-regular-svg-icons';
-import { useAuth } from '../context/AuthContext';
+import { usePlaylists } from '../context/PlaylistContext';
+import { useToast } from '../context/ToastContext';
+import { GENRES, findGenre } from '../utils/genres';
+import { Route, routeToPath } from '../utils/router';
 
 interface MainContentProps {
-  viewMode: 'home' | 'category' | 'search' | 'playlist' | 'all-songs';
-  onNavigate: (mode: 'home' | 'category' | 'search' | 'playlist' | 'all-songs') => void;
-  selectedPlaylistId?: number | null;
-  selectedPlaylistName?: string | null;
+  route: Route;
+  navigate: (route: Route, options?: { replace?: boolean }) => void;
 }
 
-const MainContent: React.FC<MainContentProps> = ({ 
-  viewMode: propViewMode, 
-  onNavigate, 
-  selectedPlaylistId, 
-  selectedPlaylistName 
-}) => {
-  const { user } = useAuth();
-  const [viewMode, setViewMode] = useState<'home' | 'category' | 'search' | 'playlist' | 'all-songs'>(propViewMode);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [categorySongs, setCategorySongs] = useState<Song[]>([]);
-  const [recentlyPlayed, setRecentlyPlayed] = useState<Song[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<Song[]>([]);
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [playlistSongs, setPlaylistSongs] = useState<Song[]>([]);
-  const [allSongs, setAllSongs] = useState<Song[]>([]);
-  const [hoveredCardId, setHoveredCardId] = useState<number | null>(null);
+const LIBRARY_HUE = 340;
+const PLAYLIST_HUE = 300;
 
-  // Load recently played songs
+const countLabel = (n: number) => `${n} song${n !== 1 ? 's' : ''}`;
+
+/** The first few songs that have a cover */
+const pickCovers = (songs: Song[], max: number) => songs.filter(s => s.coverUrl).slice(0, max);
+
+const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
+  const { playlists, loading: playlistsLoading, renamePlaylist, refreshPlaylists } = usePlaylists();
+  const { showToast } = useToast();
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  const [recentlyPlayed, setRecentlyPlayed] = useState<Song[]>([]);
+  const [recentLoaded, setRecentLoaded] = useState(false);
+  const [library, setLibrary] = useState<Song[]>([]);
+  // Songs of the genre, library or playlist page being shown
+  const [pageSongs, setPageSongs] = useState<Song[]>([]);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(route.view === 'search' ? route.q || '' : '');
+  const [searchResults, setSearchResults] = useState<Song[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+
+  // One key per page (the search text is left out, so typing doesn't count as a new page)
+  const pageKey = route.view === 'search' ? '/search' : routeToPath(route);
+
   const loadRecentlyPlayed = async () => {
     const songs = await getRecentlyPlayed();
-    setRecentlyPlayed(songs.slice(0, 7)); // Show max 7 songs
+    setRecentlyPlayed(songs.slice(0, 7)); // Show max 7 songs (one row on wide screens)
+    setRecentLoaded(true);
   };
 
-  // Sync viewMode from props
-  useEffect(() => {
-    setViewMode(propViewMode);
-  }, [propViewMode]);
-
-  // Load playlist songs when viewing a playlist
-  useEffect(() => {
-    if (viewMode === 'playlist' && selectedPlaylistId) {
-      const loadPlaylist = async () => {
-        const songs = await getPlaylistSongs(selectedPlaylistId);
-        setPlaylistSongs(songs);
-      };
-      loadPlaylist();
-    }
-  }, [viewMode, selectedPlaylistId]);
-
-  // Load recently played on mount
+  // Recently played, and the library for the tile counts and covers
   useEffect(() => {
     loadRecentlyPlayed();
+    loadSongs().then((songs) => setLibrary(Array.isArray(songs) ? songs : []));
   }, []);
 
-  // Real-time search with debounce
+  // A new page: start at the top and load its songs
   useEffect(() => {
-    const delaySearch = setTimeout(async () => {
-      if (searchQuery.trim().length > 0) {
+    mainRef.current?.scrollTo(0, 0);
+    setIsRenaming(false);
+    setPageSongs([]);
+
+    let load: (() => Promise<Song[]>) | null = null;
+    if (route.view === 'category') load = () => loadSongsByCategory(route.genre);
+    else if (route.view === 'all-songs') load = loadSongs;
+    else if (route.view === 'playlist') load = () => getPlaylistSongs(route.id);
+    if (!load) return;
+
+    let cancelled = false;
+    setPageLoading(true);
+    load().then((songs) => {
+      if (cancelled) return;
+      setPageSongs(Array.isArray(songs) ? songs : []);
+      setPageLoading(false);
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageKey]);
+
+  // Back/Forward onto a search page brings its text back
+  useEffect(() => {
+    if (route.view === 'search' && (route.q || '') !== searchQuery.trim()) {
+      setSearchQuery(route.q || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route]);
+
+  // Search as you type (debounced), and keep the text in the address bar
+  useEffect(() => {
+    if (route.view !== 'search') return;
+    const q = searchQuery.trim();
+    const timer = setTimeout(async () => {
+      navigate({ view: 'search', q: q || undefined }, { replace: true });
+      if (q) {
         setIsSearching(true);
-        const results = await searchSongs(searchQuery);
-        setSearchResults(results);
+        setSearchResults(await searchSongs(q));
         setIsSearching(false);
       } else {
         setSearchResults([]);
       }
-    }, 300); // 300ms debounce
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, route.view, navigate]);
 
-    return () => clearTimeout(delaySearch);
-  }, [searchQuery]);
-
-  // Listen for song changes via SSE and update recently played
+  // Refresh recently played when the song changes or playback starts (live updates from the server)
   useEffect(() => {
-    const handleSongChange = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      console.log('Received songChanged event:', customEvent.detail);
-      // Delay slightly to ensure backend has processed the command
-      setTimeout(() => {
-        console.log('Reloading recently played...');
-        loadRecentlyPlayed();
-      }, 500);
-    };
-
-    console.log('Setting up songChanged listener');
-    window.addEventListener('songChanged', handleSongChange);
-    
+    const refresh = () => setTimeout(loadRecentlyPlayed, 500);
+    window.addEventListener('songChanged', refresh);
+    window.addEventListener('playHistoryChanged', refresh);
     return () => {
-      console.log('Removing songChanged listener');
-      window.removeEventListener('songChanged', handleSongChange);
+      window.removeEventListener('songChanged', refresh);
+      window.removeEventListener('playHistoryChanged', refresh);
     };
   }, []);
 
-  const handleCategoryClick = async (category: string) => {
-    setSelectedCategory(category);
-    setViewMode('category');
-    const songs = await loadSongsByCategory(category);
-    setCategorySongs(songs);
-    console.log(`${category} songs:`, songs);
-  };
+  const playlist = route.view === 'playlist' ? playlists.find(p => p.id === route.id) : undefined;
+  const genre = route.view === 'category' ? findGenre(route.genre) : undefined;
 
-  const handleBrowseAllSongs = async () => {
-    setViewMode('all-songs');
-    onNavigate('all-songs');
-    const songs = await loadSongs();
-    setAllSongs(songs);
-    console.log('All songs:', songs);
-  };
+  // The tab title, which is also what the browser's history list shows
+  useEffect(() => {
+    const titles: Record<string, string | undefined> = {
+      search: 'Search',
+      'all-songs': 'Library',
+      category: route.view === 'category' ? genre?.label || route.genre : undefined,
+      playlist: playlist?.name,
+    };
+    const page = titles[route.view];
+    document.title = page ? `${page} · Music Box` : 'Music Box';
+  }, [route, genre, playlist]);
 
-  const handleBackToHome = () => {
-    setViewMode('home');
-    onNavigate('home');
-    setSelectedCategory(null);
-    setCategorySongs([]);
-    setSearchQuery('');
-    setSearchResults([]);
-    setPlaylistSongs([]);
-    setAllSongs([]);
-  };
-
-  const handlePlayAll = async () => {
-    if (playlistSongs.length === 0) return;
-    
-    // Get song IDs from playlist songs
-    const songIds = playlistSongs.map(song => song.id);
-    
-    // Set the playlist queue on the backend
-    const success = await setPlaylistQueue(songIds);
-    if (success) {
-      console.log('Playlist queue set, now playing playlist songs only');
-    }
-  };
+  const goHome = () => navigate({ view: 'home' });
+  const openGenre = (genre: string) => navigate({ view: 'category', genre });
 
   const handleSongClick = async (song: Song, songsInContext: Song[]) => {
-    const songIds = songsInContext.map(s => s.id);
-    const success = await playSpecificSong(song.id, songIds);
+    const success = await playSpecificSong(song.id, songsInContext.map(s => s.id));
     if (success) {
       // Refresh recently played after a short delay to ensure backend has updated
-      setTimeout(() => {
-        loadRecentlyPlayed();
-      }, 500);
+      setTimeout(loadRecentlyPlayed, 500);
     }
   };
 
-  // Playlist Page View
-  if (viewMode === 'playlist' && selectedPlaylistId) {
+  /** Plays the page's songs from the first one, in order */
+  const handlePlayAll = async () => {
+    if (pageSongs.length === 0) return;
+    if (await setPlaylistQueue(pageSongs.map(s => s.id))) {
+      setTimeout(loadRecentlyPlayed, 500);
+    }
+  };
+
+  const startRename = () => {
+    if (!playlist) return;
+    setRenameValue(playlist.name);
+    setIsRenaming(true);
+  };
+
+  const saveRename = async () => {
+    const name = renameValue.trim();
+    setIsRenaming(false);
+    if (!playlist || !name || name === playlist.name) return;
+    if (!(await renamePlaylist(playlist.id, name))) {
+      showToast('Could not rename the playlist', 'error');
+    }
+  };
+
+  const handleRemoveFromPlaylist = async (song: Song) => {
+    if (!playlist) return;
+    if (await removeSongFromPlaylist(playlist.id, song.id)) {
+      setPageSongs(songs => songs.filter(s => s.id !== song.id));
+      refreshPlaylists(); // song count in the sidebar
+      showToast(`Removed ${song.title} from ${playlist.name}`, 'success');
+    } else {
+      showToast('Could not remove the song', 'error');
+    }
+  };
+
+  /** The song grid of a genre, library or playlist page */
+  const songGrid = (emptyText: string, onRemove?: (song: Song) => void) => {
+    if (pageLoading) return null;
+    if (pageSongs.length === 0) {
+      return <p className="empty-state">{emptyText}</p>;
+    }
     return (
-      <div className="main-content">
-        <div className="greeting-section">
-          <button 
-            onClick={handleBackToHome}
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <FontAwesomeIcon icon={faArrowLeft} />
-            Back to Home
-          </button>
-          <div>
-            <h1>{selectedPlaylistName || 'Playlist'}</h1>
-            <p>{playlistSongs.length} song{playlistSongs.length !== 1 ? 's' : ''}</p>
-            {playlistSongs.length > 0 && (
-              <button
-                onClick={handlePlayAll}
-                style={{
-                  background: 'hotpink',
-                  border: 'none',
-                  color: 'white',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '25px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  boxShadow: '0 4px 12px rgba(255, 105, 180, 0.3)',
-                  marginTop: '1rem'
-                }}
-              >
-                <FontAwesomeIcon icon={faPlay} />
-                Play All
-              </button>
-            )}
-          </div>
+      <section className="content-section">
+        <div className="card-grid">
+          {pageSongs.map((song) => (
+            <SongCard
+              key={song.id}
+              song={song}
+              onPlay={() => handleSongClick(song, pageSongs)}
+              onRemove={onRemove ? () => onRemove(song) : undefined}
+              onOpenGenre={route.view === 'category' ? undefined : openGenre}
+            />
+          ))}
         </div>
-
-        {playlistSongs.length > 0 ? (
-          <section className="content-section">
-            <div className="card-grid">
-              {playlistSongs.map((song) => (
-                <div 
-                  key={song.id} 
-                  className="music-card"
-                  onMouseEnter={() => setHoveredCardId(song.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                  style={{ position: 'relative', cursor: 'pointer' }}
-                >
-                  <div className="card-image" onClick={() => handleSongClick(song, playlistSongs)}>
-                    <img src={coverOf(song)} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {hoveredCardId === song.id && (
-                      <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(0, 0, 0, 0.6)',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          borderRadius: '50%',
-                          background: 'hotpink',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(255, 105, 180, 0.5)',
-                          transform: 'translateY(-50%)'
-                        }}>
-                          <FontAwesomeIcon icon={faPlay} style={{ fontSize: '20px', marginLeft: '3px' }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="card-info">
-                    <h3>{song.title}</h3>
-                    <p>{song.artist}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : (
-          <section className="content-section">
-            <p style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>No songs in this playlist yet</p>
-          </section>
-        )}
-      </div>
+      </section>
     );
-  }
+  };
 
-  // Search Page View
-  if (viewMode === 'search') {
-    return (
-      <div className="main-content">
-        <div className="greeting-section">
-          <button 
-            onClick={handleBackToHome}
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <FontAwesomeIcon icon={faArrowLeft} />
-            Back to Home
+  const subtitle = (text?: string) =>
+    pageLoading ? 'Loading…' : [text, countLabel(pageSongs.length)].filter(Boolean).join(' · ');
+
+  let content: React.ReactNode;
+
+  if (route.view === 'playlist') {
+    if (!playlist && !playlistsLoading) {
+      // Deleted, or someone else's
+      content = (
+        <>
+          <PageHero hue={PLAYLIST_HUE} icon={faListUl} eyebrow="Playlist" title="Playlist not found"
+            subtitle="It may have been deleted." covers={[]} onBack={goHome} />
+        </>
+      );
+    } else {
+      const title = isRenaming ? (
+        <input
+          className="playlist-rename-input"
+          value={renameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') saveRename();
+            if (e.key === 'Escape') setIsRenaming(false);
+          }}
+          onBlur={saveRename}
+          aria-label="Playlist name"
+          maxLength={100}
+          autoFocus
+        />
+      ) : (
+        <div className="playlist-title-row">
+          <h1 className="page-hero-title">{playlist?.name || 'Playlist'}</h1>
+          <button type="button" className="playlist-rename-button" onClick={startRename} title="Rename playlist" aria-label="Rename playlist">
+            <FontAwesomeIcon icon={faPen} />
           </button>
+        </div>
+      );
+      content = (
+        <>
+          <PageHero hue={PLAYLIST_HUE} icon={faListUl} eyebrow="Playlist" title={title} subtitle={subtitle()}
+            covers={pageSongs} onBack={goHome} onPlayAll={pageSongs.length > 0 ? handlePlayAll : undefined} />
+          {songGrid('No songs in this playlist yet. Play a song and add it with the playlist button on the player.', handleRemoveFromPlaylist)}
+        </>
+      );
+    }
+  } else if (route.view === 'category') {
+    content = (
+      <>
+        <PageHero hue={genre?.hue ?? LIBRARY_HUE} eyebrow="Genre"
+          title={genre?.label || route.genre} subtitle={subtitle(genre?.tagline)} covers={pageSongs}
+          onBack={goHome} onPlayAll={pageSongs.length > 0 ? handlePlayAll : undefined} />
+        {songGrid('No songs found in this genre')}
+      </>
+    );
+  } else if (route.view === 'all-songs') {
+    content = (
+      <>
+        <PageHero hue={LIBRARY_HUE} icon={faRecordVinyl} eyebrow="Library" title="Music Library"
+          subtitle={subtitle(`${GENRES.length} genres`)} covers={pageSongs}
+          onBack={goHome} onPlayAll={pageSongs.length > 0 ? handlePlayAll : undefined} />
+        {songGrid('No songs found in the library')}
+      </>
+    );
+  } else if (route.view === 'search') {
+    content = (
+      <>
+        <button type="button" className="back-button" onClick={goHome}>
+          <FontAwesomeIcon icon={faArrowLeft} />
+          Home
+        </button>
+        <div className="greeting-section">
           <h1>Search</h1>
-          <p>Find your favorite songs</p>
+          <p>Find songs by title, artist or genre</p>
         </div>
 
         <section className="content-section">
-          <div style={{ marginBottom: '1.5rem' }}>
-            <input
-              type="text"
-              placeholder="Search by song title or artist..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              autoFocus
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                background: 'var(--card)',
-                color: 'var(--foreground)',
-                fontSize: '16px',
-                outline: 'none',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={(e) => e.target.style.borderColor = 'hotpink'}
-              onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
-            />
-          </div>
+          <input
+            type="search"
+            className="search-input"
+            placeholder="Search by title, artist or genre..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search songs"
+            autoFocus
+          />
 
           {isSearching ? (
-            <p style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>Searching...</p>
+            <p className="empty-state">Searching...</p>
           ) : searchQuery.trim().length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>Start typing to search for songs</p>
+            <p className="empty-state">Start typing to search for songs</p>
           ) : searchResults.length > 0 ? (
             <div className="card-grid">
               {searchResults.map((song) => (
-                <div 
-                  key={song.id} 
-                  className="music-card"
-                  onMouseEnter={() => setHoveredCardId(song.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                  style={{ position: 'relative', cursor: 'pointer' }}
-                >
-                  <div className="card-image" onClick={() => handleSongClick(song, searchResults)}>
-                    <img src={coverOf(song)} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {hoveredCardId === song.id && (
-                      <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(0, 0, 0, 0.6)',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          borderRadius: '50%',
-                          background: 'hotpink',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(255, 105, 180, 0.5)',
-                          transform: 'translateY(-50%)'
-                        }}>
-                          <FontAwesomeIcon icon={faPlay} style={{ fontSize: '20px', marginLeft: '3px' }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="card-info">
-                    <h3>{song.title}</h3>
-                    <p>{song.artist}</p>
-                  </div>
-                </div>
+                <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, searchResults)} onOpenGenre={openGenre} />
               ))}
             </div>
           ) : (
-            <p style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>No results found for "{searchQuery}"</p>
+            <p className="empty-state">No results found for "{searchQuery.trim()}"</p>
           )}
         </section>
-      </div>
+      </>
     );
-  }
-
-  // Category Page View
-  if (viewMode === 'category' && selectedCategory) {
-    return (
-      <div className="main-content">
+  } else {
+    content = (
+      <>
         <div className="greeting-section">
-          <button 
-            onClick={handleBackToHome}
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <FontAwesomeIcon icon={faArrowLeft} />
-            Back to Home
-          </button>
-          <h1>{selectedCategory}</h1>
-          <p>{categorySongs.length} song{categorySongs.length !== 1 ? 's' : ''} available</p>
-        </div>
-
-        {categorySongs.length > 0 ? (
-          <section className="content-section">
-            <div className="card-grid">
-              {categorySongs.map((song) => (
-                <div 
-                  key={song.id} 
-                  className="music-card"
-                  onMouseEnter={() => setHoveredCardId(song.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                  style={{ position: 'relative', cursor: 'pointer' }}
-                >
-                  <div className="card-image" onClick={() => handleSongClick(song, categorySongs)}>
-                    <img src={coverOf(song)} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {hoveredCardId === song.id && (
-                      <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(0, 0, 0, 0.6)',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          borderRadius: '50%',
-                          background: 'hotpink',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(255, 105, 180, 0.5)',
-                          transform: 'translateY(-50%)'
-                        }}>
-                          <FontAwesomeIcon icon={faPlay} style={{ fontSize: '20px', marginLeft: '3px' }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="card-info">
-                    <h3>{song.title}</h3>
-                    <p>{song.artist}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : (
-          <section className="content-section">
-            <p style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>No songs found in this category</p>
-          </section>
-        )}
-      </div>
-    );
-  }
-
-  // All Songs Page View
-  if (viewMode === 'all-songs') {
-    return (
-      <div className="main-content">
-        <div className="greeting-section">
-          <button 
-            onClick={handleBackToHome}
-            style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <FontAwesomeIcon icon={faArrowLeft} />
-            Back to Home
-          </button>
-          <h1>All Songs</h1>
-          <p>{allSongs.length} song{allSongs.length !== 1 ? 's' : ''} in library</p>
-        </div>
-
-        {allSongs.length > 0 ? (
-          <section className="content-section">
-            <div className="card-grid">
-              {allSongs.map((song) => (
-                <div 
-                  key={song.id} 
-                  className="music-card"
-                  onMouseEnter={() => setHoveredCardId(song.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                  style={{ position: 'relative', cursor: 'pointer' }}
-                >
-                  <div className="card-image" onClick={() => handleSongClick(song, allSongs)}>
-                    <img src={coverOf(song)} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                    {hoveredCardId === song.id && (
-                      <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(0, 0, 0, 0.6)',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          borderRadius: '50%',
-                          background: 'hotpink',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(255, 105, 180, 0.5)',
-                          transform: 'translateY(-50%)'
-                        }}>
-                          <FontAwesomeIcon icon={faPlay} style={{ fontSize: '20px', marginLeft: '3px' }} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="card-info">
-                    <h3>{song.title}</h3>
-                    <p>{song.artist}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : (
-          <section className="content-section">
-            <p style={{ textAlign: 'center', color: '#888', padding: '2rem' }}>No songs found in library</p>
-          </section>
-        )}
-      </div>
-    );
-  }
-
-  // Home Page View
-  return (
-    <div className="main-content">
-      <div className="greeting-section">
-        <h1>Hi, {user?.username || 'User'}</h1>
+          <h1>Hi there</h1>
           <p>Welcome! Here's what's playing.</p>
-      </div>
-
-      <section className="content-section">
-        <div className="section-title">
-          <FontAwesomeIcon icon={faClock} />
-          <h2>Recently Played</h2>
         </div>
-        {recentlyPlayed.length > 0 ? (
-          <div className="card-grid">
-            {recentlyPlayed.map((song) => (
-              <div 
-                key={song.id} 
-                className="music-card"
-                onMouseEnter={() => setHoveredCardId(song.id)}
-                onMouseLeave={() => setHoveredCardId(null)}
-                style={{ position: 'relative', cursor: 'pointer' }}
-              >
-                <div className="card-image" onClick={() => handleSongClick(song, recentlyPlayed)}>
-                  <img src={coverOf(song)} alt={song.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                  {hoveredCardId === song.id && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'rgba(0, 0, 0, 0.6)',
-                      borderRadius: '8px'
-                    }}>
-                      <div style={{
-                        width: '50px',
-                        height: '50px',
-                        borderRadius: '50%',
-                        background: 'hotpink',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 4px 12px rgba(255, 105, 180, 0.5)',
-                        transform: 'translateY(-50%)'
-                      }}>
-                        <FontAwesomeIcon icon={faPlay} style={{ fontSize: '20px', marginLeft: '3px' }} />
+
+        <section className="content-section">
+          <div className="section-title">
+            <FontAwesomeIcon icon={faClock} />
+            <h2>Recently Played</h2>
+          </div>
+          {/* Always exactly one row of cards, so the sections below don't jump when the first song plays.
+              With no history yet, faint placeholder cards hold the space and the message sits on top. */}
+          <div className="recent-row">
+            <div className="card-grid card-grid--one-row">
+              {recentlyPlayed.length > 0
+                ? recentlyPlayed.map((song) => (
+                    <SongCard key={song.id} song={song} onPlay={() => handleSongClick(song, recentlyPlayed)} onOpenGenre={openGenre} />
+                  ))
+                : Array.from({ length: 7 }, (_, i) => (
+                    <div key={i} className="music-card music-card--placeholder" aria-hidden="true">
+                      <div className="card-image" />
+                      <div className="card-info">
+                        <h3>&nbsp;</h3>
+                        <p>&nbsp;</p>
                       </div>
                     </div>
-                  )}
-                </div>
-                <div className="card-info">
-                  <h3>{song.title}</h3>
-                  <p>{song.artist}</p>
-                </div>
-              </div>
-            ))}
+                  ))}
+            </div>
+            {recentLoaded && recentlyPlayed.length === 0 && (
+              <p className="recent-empty-note">No recently played songs yet. Start playing to see your history!</p>
+            )}
           </div>
-        ) : (
-          <p style={{ textAlign: 'center', color: '#888', padding: '1rem' }}>No recently played songs yet. Start playing to see your history!</p>
-        )}
-      </section>
+        </section>
 
-      <section className="content-section">
-        <div className="section-title">
-          <FontAwesomeIcon icon={faMusic} />
-          <h2>Browse All Songs</h2>
-        </div>
-        <div className="browse-grid">
-          <div 
-            className="browse-category" 
-            style={{ 
-              background: 'linear-gradient(135deg, #2c3e50, #34495e)', 
-              cursor: 'pointer',
-              gridColumn: '1 / -1'
-            }}
-            onClick={handleBrowseAllSongs}
-          >
-            <h3>Music Library</h3>
+        <section className="content-section">
+          <div className="section-title">
+            <FontAwesomeIcon icon={faMusic} />
+            <h2>Browse All Songs</h2>
           </div>
-        </div>
-      </section>
+          <div className="browse-grid">
+            <BrowseTile
+              wide
+              title="Music Library"
+              subtitle={library.length > 0
+                ? `${countLabel(library.length)} · ${GENRES.length} genres`
+                : 'Every song in one place'}
+              icon={faRecordVinyl}
+              hue={LIBRARY_HUE}
+              covers={pickCovers(library, 5)}
+              onClick={() => navigate({ view: 'all-songs' })}
+            />
+          </div>
+        </section>
 
-      <section className="content-section">
-        <div className="section-title">
-          <FontAwesomeIcon icon={faCompass} />
-          <h2>Browse Genres</h2>
-        </div>
-        <div className="browse-grid">
-          <div 
-            className="browse-category" 
-            style={{ background: 'linear-gradient(135deg, #16a085, #1abc9c)', cursor: 'pointer' }}
-            onClick={() => handleCategoryClick('Electronic')}
-          >
-            <h3>Electronic</h3>
+        <section className="content-section">
+          <div className="section-title">
+            <FontAwesomeIcon icon={faCompass} />
+            <h2>Browse Genres</h2>
           </div>
-          <div 
-            className="browse-category" 
-            style={{ background: 'linear-gradient(135deg, #8e44ad, #9b59b6)', cursor: 'pointer' }}
-            onClick={() => handleCategoryClick('Hiphop')}
-          >
-            <h3>Hiphop</h3>
+          <div className="browse-grid">
+            {GENRES.map((g) => {
+              const songs = library.filter(s => s.category?.toLowerCase() === g.name.toLowerCase());
+              return (
+                <BrowseTile
+                  key={g.name}
+                  title={g.label}
+                  subtitle={library.length > 0 ? countLabel(songs.length) : g.tagline}
+                  hue={g.hue}
+                  covers={pickCovers(songs, 3)}
+                  onClick={() => navigate({ view: 'category', genre: g.name })}
+                />
+              );
+            })}
           </div>
-          <div 
-            className="browse-category" 
-            style={{ background: 'linear-gradient(135deg, #d35400, #e67e22)', cursor: 'pointer' }}
-            onClick={() => handleCategoryClick('Lofi')}
-          >
-            <h3>Lofi</h3>
-          </div>
-          <div 
-            className="browse-category" 
-            style={{ background: 'linear-gradient(135deg, #c0392b, #e74c3c)', cursor: 'pointer' }}
-            onClick={() => handleCategoryClick('Trance')}
-          >
-            <h3>Trance</h3>
-          </div>
-        </div>
-      </section>
+        </section>
+      </>
+    );
+  }
+
+  return (
+    <div className="main-content" ref={mainRef}>
+      {content}
     </div>
   );
 };

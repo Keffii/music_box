@@ -65,10 +65,91 @@
   gap: 8px;
 }
 
-@media (min-width: 768px) {
-  .card-grid {
-    grid-template-columns: repeat(7, 1fr);
+/* Columns grow with the space; the sidebar takes 256px again from 1025px */
+@media (min-width: 480px) {
+  .card-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 700px) {
+  .card-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 1025px) {
+  .card-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+@media (min-width: 1360px) {
+  .card-grid { grid-template-columns: repeat(7, 1fr); }
+}
+
+/* Phones: the player bar is taller (three rows), and headings are smaller */
+@media (max-width: 640px) {
+  .main-content {
+    padding: 12px 12px 180px;
   }
+
+  .greeting-section h1 {
+    font-size: 24px;
+  }
+
+  .greeting-section p {
+    font-size: 14px;
+  }
+}
+
+/* Recently Played: exactly one row at every width (extra cards are cut off rather than starting a
+   second row), so its height never changes and the sections below stay put */
+.recent-row {
+  position: relative;
+}
+
+/* Only as many cards as the grid has columns at this width (2, 3, 4, 5 or 7, see .card-grid).
+   display: none rather than clipping, so hidden cards can't be reached with Tab either. */
+.card-grid--one-row > :nth-child(n + 3) {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .card-grid--one-row > :nth-child(n + 3) { display: block; }
+  .card-grid--one-row > :nth-child(n + 4) { display: none; }
+}
+
+@media (min-width: 700px) {
+  .card-grid--one-row > :nth-child(n + 4) { display: block; }
+  .card-grid--one-row > :nth-child(n + 5) { display: none; }
+}
+
+@media (min-width: 1025px) {
+  .card-grid--one-row > :nth-child(n + 5) { display: block; }
+  .card-grid--one-row > :nth-child(n + 6) { display: none; }
+}
+
+@media (min-width: 1360px) {
+  .card-grid--one-row > :nth-child(n + 6) { display: block; }
+  .card-grid--one-row > :nth-child(n + 8) { display: none; }
+}
+
+/* Stand-ins with the exact size of a song card, shown before anything has been played */
+.music-card--placeholder {
+  cursor: default;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.music-card--placeholder .card-image {
+  box-shadow: none;
+}
+
+.recent-empty-note {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 16px;
+  text-align: center;
+  color: var(--muted-foreground);
 }
 
 .music-card {
@@ -77,15 +158,455 @@
   border-radius: var(--radius);
   padding: 8px; 
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: background-color 0.25s ease, transform 0.25s ease;
 }
 
-.music-card:hover {
+/* Hover is on the wrapper, so pointing at the heart or ⋯ beside the card keeps it lit */
+.song-card-wrap:hover .music-card,
+.song-card-wrap.menu-open .music-card,
+.music-card:focus-visible {
   background-color: var(--secondary);
   transform: translateY(-2px);
 }
 
+.music-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Play overlay on the cover: fades in on hover or keyboard focus (fade from index.css) */
+.song-card-wrap:hover .card-play-overlay,
+.music-card:focus-visible .card-play-overlay {
+  opacity: 1;
+}
+
+.song-card-wrap {
+  position: relative;
+}
+
+/* Room for the heart and ⋯ next to the title */
+.song-card-wrap .card-info {
+  padding-right: 54px;
+}
+
+/* Heart and ⋯ at the bottom right, beside the title. They lift with the card on hover. */
+.card-actions {
+  position: absolute;
+  right: 6px;
+  bottom: 10px;
+  display: flex;
+  gap: 2px;
+  transition: transform 0.25s ease;
+}
+
+.song-card-wrap:hover .card-actions,
+.song-card-wrap.menu-open .card-actions,
+.song-card-wrap:focus-within .card-actions {
+  transform: translateY(-2px);
+}
+
+.card-action {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Shown on hover or keyboard focus. A liked song always shows its pink heart. */
+.song-card-wrap:hover .card-action,
+.song-card-wrap:focus-within .card-action,
+.song-card-wrap.menu-open .card-action,
+.card-action.liked {
+  opacity: 1;
+}
+
+.card-action:hover,
+.card-action:focus-visible {
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.card-action:focus-visible {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.card-like.liked {
+  color: hotpink;
+}
+
+.card-like:active {
+  transform: scale(0.85);
+}
+
+.song-card-wrap.menu-open .card-more {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Touch screens have no hover, so the buttons are always there */
+@media (hover: none) {
+  .card-action {
+    opacity: 1;
+  }
+}
+
+/* Playlist page: remove (x) button on a song's cover */
+
+.card-remove-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.song-card-wrap:hover .card-remove-button,
+.song-card-wrap:focus-within .card-remove-button {
+  opacity: 1;
+  transform: translateY(-2px); /* lifts with the card */
+}
+
+.song-card-wrap .card-remove-button:hover,
+.song-card-wrap .card-remove-button:focus-visible {
+  background: hsl(0, 70%, 50%);
+  transform: translateY(-2px) scale(1.1);
+  outline: none;
+}
+
+/* Touch screens have no hover, so always show it there */
+@media (hover: none) {
+  .card-remove-button {
+    opacity: 1;
+  }
+}
+
+/* "Home" button above a page's header */
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.back-button svg {
+  font-size: 11px;
+  transition: transform 0.2s ease;
+}
+
+.back-button:hover,
+.back-button:focus-visible {
+  background: var(--secondary);
+  border-color: hsla(340, 70%, 75%, 0.45);
+  color: var(--primary);
+  outline: none;
+}
+
+.back-button:hover svg {
+  transform: translateX(-2px);
+}
+
+/* Genre, library and playlist page header: the same lit card as the tile on the home page */
+.page-hero {
+  --tile-hue: 340;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 20px;
+  border-radius: calc(var(--radius) + 4px);
+  border: 1px solid hsla(var(--tile-hue), 60%, 70%, 0.18);
+  background:
+    radial-gradient(90% 160% at 0% 100%, hsla(var(--tile-hue), 75%, 55%, 0.3), transparent 60%),
+    radial-gradient(60% 120% at 100% 0%, hsla(var(--tile-hue), 75%, 60%, 0.12), transparent 70%),
+    linear-gradient(135deg, hsl(var(--tile-hue), 28%, 20%), var(--card) 80%);
+  box-shadow: 0 12px 32px -16px hsla(var(--tile-hue), 85%, 55%, 0.45);
+}
+
+.page-hero-art {
+  position: relative;
+  flex-shrink: 0;
+  width: 152px;
+  height: 152px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: hsla(var(--tile-hue), 40%, 30%, 0.5);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.page-hero-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Four covers in a 2x2 grid */
+.page-hero-art--mosaic {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.page-hero-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: hsl(var(--tile-hue), 85%, 85%);
+  background: hsla(var(--tile-hue), 45%, 18%, 0.85);
+  border: 1px solid hsla(var(--tile-hue), 70%, 70%, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+/* No covers yet: the icon fills the artwork instead */
+.page-hero-badge--large {
+  inset: 0;
+  width: auto;
+  height: auto;
+  border: none;
+  border-radius: 0;
+  font-size: 48px;
+  background: linear-gradient(135deg, hsla(var(--tile-hue), 60%, 45%, 0.6), hsla(var(--tile-hue), 40%, 20%, 0.6));
+}
+
+.page-hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.page-hero-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--tile-hue), 80%, 80%);
+}
+
+.page-hero-title {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 2px 0 4px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.page-hero-subtitle {
+  font-size: 14px;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.play-all-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 999px;
+  background: hotpink;
+  color: white;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(255, 105, 180, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.play-all-button:hover,
+.play-all-button:focus-visible {
+  transform: translateY(-1px);
+  background: hsl(330, 100%, 74%);
+  box-shadow: 0 6px 18px rgba(255, 105, 180, 0.5);
+  outline: none;
+}
+
+.play-all-button svg {
+  font-size: 13px;
+}
+
+/* Phones: smaller artwork and title, still side by side */
+@media (max-width: 640px) {
+  .page-hero {
+    gap: 16px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+
+  .page-hero-art {
+    width: 96px;
+    height: 96px;
+  }
+
+  .page-hero-badge {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+    right: 5px;
+    bottom: 5px;
+  }
+
+  .page-hero-badge--large {
+    font-size: 32px;
+  }
+
+  .page-hero-title {
+    font-size: 24px;
+  }
+
+  .page-hero-subtitle {
+    font-size: 13px;
+  }
+
+  .play-all-button {
+    margin-top: 10px;
+    padding: 8px 18px;
+    font-size: 14px;
+  }
+}
+
+.search-input {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px hsla(340, 70%, 75%, 0.15);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--muted-foreground);
+  padding: 2rem 1rem;
+  margin: 0;
+}
+
+/* Playlist page title with its rename (pen) button */
+.playlist-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.playlist-rename-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.playlist-rename-button:hover,
+.playlist-rename-button:focus-visible {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.playlist-rename-input {
+  font-size: 28px;
+  font-weight: 700;
+  padding: 2px 8px;
+  margin: 2px 0 6px;
+  width: min(420px, 100%);
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+  background: var(--card);
+  color: var(--foreground);
+  outline: none;
+}
+
+.card-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.card-play-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: hotpink;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(255, 105, 180, 0.5);
+}
+
+.card-play-button svg {
+  margin-left: 3px; /* the play triangle looks centred when nudged right */
+}
+
 .card-image {
+  position: relative;
   width: 100%;
   aspect-ratio: 1; /* This makes it square - height = width */
   margin-bottom: 6px;
@@ -145,7 +666,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  transition: background-color 0.2s;
+  transition: background-color 0.25s ease;
   cursor: pointer;
 }
 
@@ -203,29 +724,196 @@
   }
 }
 
-.browse-category {
-  height: 70px;
-  border-radius: var(--radius);
-  padding: 10px;
+/* Genre and library tiles: dark cards lit in their own hue (--tile-hue), with a fan of covers */
+.browse-tile {
+  --tile-hue: 340;
+  position: relative;
+  overflow: hidden;
+  height: 120px;
+  padding: 14px;
   display: flex;
-  align-items: flex-end;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border);
-}
-
-.browse-category:hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.browse-category h3 {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  text-align: left;
+  font: inherit;
   color: var(--foreground);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 4px 16px rgba(0, 0, 0, 0.6); /* Stronger shadow for better text visibility */
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: 1px solid hsla(var(--tile-hue), 60%, 70%, 0.16);
+  background:
+    radial-gradient(120% 150% at 0% 100%, hsla(var(--tile-hue), 75%, 55%, 0.32), transparent 60%),
+    linear-gradient(135deg, hsl(var(--tile-hue), 28%, 21%), var(--card) 75%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.browse-tile:hover,
+.browse-tile:focus-visible {
+  transform: translateY(-2px);
+  border-color: hsla(var(--tile-hue), 75%, 72%, 0.5);
+  box-shadow: 0 10px 28px -10px hsla(var(--tile-hue), 85%, 60%, 0.55);
+}
+
+.browse-tile:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.browse-tile-icon {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: hsl(var(--tile-hue), 85%, 82%);
+  background: hsla(var(--tile-hue), 75%, 65%, 0.18);
+  transition: background-color 0.3s ease;
+}
+
+.browse-tile:hover .browse-tile-icon {
+  background: hsla(var(--tile-hue), 75%, 65%, 0.3);
+}
+
+.browse-tile-text {
+  position: relative;
+  z-index: 1;
+  margin-top: auto; /* stays at the bottom, with or without an icon above */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.browse-tile-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+.browse-tile-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.browse-tile-chevron {
+  font-size: 9px;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.browse-tile:hover .browse-tile-chevron,
+.browse-tile:focus-visible .browse-tile-chevron {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Covers overlap in a fan in the top-right corner, and spread a little on hover */
+.browse-tile-covers {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.browse-tile-cover {
+  --cover: 52px;
+  --spin: calc((var(--i) - (var(--n) - 1) / 2) * 7deg);
+  width: var(--cover);
+  height: var(--cover);
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid hsla(var(--tile-hue), 40%, 30%, 0.9);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+  margin-left: calc(var(--cover) * -0.62);
+  transform: rotate(var(--spin));
+  transition: transform 0.35s ease;
+}
+
+.browse-tile-cover:first-child {
+  margin-left: 0;
+}
+
+.browse-tile:hover .browse-tile-cover,
+.browse-tile:focus-visible .browse-tile-cover {
+  transform: translateX(calc((var(--i) - (var(--n) - 1) / 2) * 6px)) translateY(-2px) rotate(calc(var(--spin) * 1.5));
+}
+
+/* The full-width Music Library tile: covers sit centred on the right, a little larger */
+.browse-tile--wide {
+  grid-column: 1 / -1;
+  height: 110px;
+}
+
+.browse-tile--wide .browse-tile-covers {
+  top: 50%;
+  right: 28px;
+  transform: translateY(-50%);
+}
+
+.browse-tile--wide .browse-tile-cover {
+  --cover: 62px;
+}
+
+.browse-tile--wide .browse-tile-title {
+  font-size: 24px;
+}
+
+/* Phones: two narrow tiles per row, so everything is a bit smaller */
+@media (max-width: 767px) {
+  .browse-tile {
+    height: 104px;
+    padding: 12px;
+  }
+
+  .browse-tile-title {
+    font-size: 17px;
+  }
+
+  .browse-tile-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .browse-tile-covers {
+    top: 12px;
+    right: 12px;
+  }
+
+  .browse-tile-cover {
+    --cover: 40px;
+    border-radius: 6px;
+  }
+
+  .browse-tile--wide {
+    height: 96px;
+  }
+
+  .browse-tile--wide .browse-tile-title {
+    font-size: 20px;
+  }
+
+  .browse-tile--wide .browse-tile-covers {
+    right: 16px;
+  }
+
+  .browse-tile--wide .browse-tile-cover {
+    --cover: 48px;
+  }
 }
 
 /* Scrollbar styling */

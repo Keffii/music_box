@@ -23,27 +23,12 @@ export const useMusicPlayer = () => {
   const userIsAdjustingVolume = useRef<boolean>(false);
   const volumeUpdateTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSongIdRef = useRef<number | null>(null);
-  // Highest command sequence number already applied. SSE replays the full state on
-  // every reconnect, so one-shot commands such as SEEK_FORWARD are keyed on seq.
+  // Highest command sequence number already applied. The stream replays the full state on every
+  // reconnect, so one-shot commands such as SEEK_FORWARD are keyed on seq.
   const lastSeqRef = useRef<number | null>(null);
-
-  // Load songs
-  const loadSongs = useCallback(async () => {
-    const data = await fetchSongs();
-    setSongs(data);
-    songsRef.current = data;
-    console.log('Songs loaded:', data);
-    
-    // Set the first song immediately on load
-    if (data && data.length > 0) {
-      const firstSong = data[0];
-      setCurrentSong(firstSong);
-      setSongTitle(firstSong.title || 'Song Name');
-      setSongArtist(firstSong.artist || 'Artist Name');
-      
-      setCoverUrl(coverOf(firstSong));
-    }
-  }, []);
+  // Latest state from the server. The first one usually arrives before the song list,
+  // so loadSongs() applies it again once the songs are known.
+  const lastServerStateRef = useRef<ServerState | null>(null);
 
   // Safe play function
   const safePlay = useCallback(() => {
@@ -54,13 +39,11 @@ export const useMusicPlayer = () => {
 
   // Update state from server
   const updateStateFromServer = useCallback((data: ServerState) => {
-    console.log('Server state update:', data);
-    
-    const isNewCommand = lastSeqRef.current !== null && data.seq !== lastSeqRef.current;
-    lastSeqRef.current = data.seq;
+    lastServerStateRef.current = data;
 
+    // Title and artist are null while the library is empty
     setSongTitle(data.title ?? 'No songs yet');
-    setSongArtist(data.artist ?? 'Add tracks to the music folder');
+    setSongArtist(data.artist ?? 'Add music to the music folder');
     setShuffleEnabled(data.shuffle);
     setRepeatEnabled(data.repeat);
     
@@ -99,7 +82,6 @@ export const useMusicPlayer = () => {
 
       // Update audio source if different
       if (audioRef.current && song.srcUrl) {
-        // Compare absolute URLs: audio.src is always absolute, so a relative path would never match
         const currentSrc = audioRef.current.src;
         const newSrc = mediaUrl(song.srcUrl);
         
@@ -124,31 +106,104 @@ export const useMusicPlayer = () => {
       audioRef.current?.pause();
     }
 
-    // Seek forward (from the remote) only for a new command, never for a replayed state
+    // Handle seek forward from the ESP32 remote, only for a new command
+    // (not when the same state is replayed, e.g. after an SSE reconnect)
+    const isNewCommand = lastSeqRef.current !== null && data.seq !== lastSeqRef.current;
+    lastSeqRef.current = data.seq ?? null;
+
+    // A new PLAY counts as a play even when the song stays the same (e.g. pressing Play on the song
+    // that's already loaded), so Recently Played refreshes then too, not only when the song changes
+    if (isNewCommand && data.lastCommand === 'PLAY') {
+      setTimeout(() => window.dispatchEvent(new CustomEvent('playHistoryChanged')), 0);
+    }
     if (isNewCommand && data.lastCommand === 'SEEK_FORWARD' && audioRef.current) {
-      const audio = audioRef.current;
-      if (Number.isFinite(audio.duration)) {
-        audio.currentTime = Math.min(audio.currentTime + 10, audio.duration);
-      }
+      const target = audioRef.current.currentTime + 10;
+      audioRef.current.currentTime = Number.isFinite(audioRef.current.duration)
+        ? Math.min(target, audioRef.current.duration)
+        : target;
     }
   }, [safePlay]);
 
-  // SSE Connection
+  // Load songs, then show the server's current song (or the first one) with its audio
+  // loaded, so the player shows the song's length before anyone presses play
+  const loadSongs = useCallback(async () => {
+    const data = await fetchSongs();
+    setSongs(data);
+    songsRef.current = data;
+
+    if (lastServerStateRef.current) {
+      updateStateFromServer(lastServerStateRef.current);
+      return;
+    }
+    if (data && data.length > 0) {
+      const firstSong = data[0];
+      setCurrentSong(firstSong);
+      setSongTitle(firstSong.title || 'Song Name');
+      setSongArtist(firstSong.artist || 'Artist Name');
+      setCoverUrl(coverOf(firstSong));
+      if (audioRef.current && !audioRef.current.src && firstSong.srcUrl) {
+        // preload="metadata": fetches just enough to know the duration
+        audioRef.current.src = mediaUrl(firstSong.srcUrl);
+      }
+    }
+  }, [updateStateFromServer]);
+
+  // Live updates of the shared player (Server-Sent Events), read with fetch() and a small parser.
+  // Reconnects after 2 s. Returns a function that stops it.
   const connectSSE = useCallback(() => {
-    const eventSource = new EventSource(`${API_BASE}/api/player/stream`);
+    let stopped = false;
+    let controller: AbortController | null = null;
 
-    eventSource.onmessage = (event: MessageEvent) => {
-      const data: ServerState = JSON.parse(event.data);
-      updateStateFromServer(data);
+    const handleEvent = (block: string) => {
+      const data = block
+        .split('\n')
+        .filter(line => line.startsWith('data:'))
+        .map(line => line.slice(5).replace(/^ /, ''))
+        .join('\n');
+      if (!data) return; // e.g. the ":ping" heartbeat
+      try {
+        updateStateFromServer(JSON.parse(data) as ServerState);
+      } catch (e) {
+        console.warn('Ignoring a malformed player update', e);
+      }
     };
 
-    eventSource.onerror = () => {
-      console.warn('SSE connection lost – reconnecting...');
-      eventSource.close();
-      setTimeout(connectSSE, 2000);
+    const run = async () => {
+      while (!stopped) {
+        controller = new AbortController();
+        try {
+          const res = await fetch(`${API_BASE}/api/player/stream`, {
+            cache: 'no-store',
+            signal: controller.signal,
+          });
+          if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer = (buffer + decoder.decode(value, { stream: true })).replace(/\r\n/g, '\n');
+            let end;
+            while ((end = buffer.indexOf('\n\n')) >= 0) {
+              handleEvent(buffer.slice(0, end));
+              buffer = buffer.slice(end + 2);
+            }
+          }
+        } catch (e) {
+          if (stopped) return;
+          console.warn('Player stream lost, reconnecting...', e);
+        }
+        if (!stopped) await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     };
 
-    return () => eventSource.close();
+    run();
+    return () => {
+      stopped = true;
+      controller?.abort();
+    };
   }, [updateStateFromServer]);
 
   // Update songsRef when songs change

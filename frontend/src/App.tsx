@@ -1,88 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBars } from '@fortawesome/free-solid-svg-icons';
+import logo from './assets/logo.png';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import MusicPlayer from './components/MusicPlayer';
-import Login from './components/Login';
-import Signup from './components/Signup';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { PlaylistProvider } from './context/PlaylistContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { useRoute, View } from './utils/router';
 
-const AppContent: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
-  const [mainView, setMainView] = useState<'home' | 'category' | 'search' | 'playlist' | 'all-songs'>('home');
-  const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
-  const [selectedPlaylistName, setSelectedPlaylistName] = useState<string | null>(null);
+/**
+ * The local demo has no accounts: the app opens straight away, and every browser and the ESP32
+ * remote share one player and one library.
+ */
+const App: React.FC = () => {
+  // The page comes from the address bar, so Back/Forward and shared links work
+  const [route, navigate] = useRoute();
+  const selectedPlaylistId = route.view === 'playlist' ? route.id : null;
+  // On phones and tablets the sidebar is a slide-in menu
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const handleNavigate = (view: 'home' | 'category' | 'search' | 'playlist' | 'all-songs') => {
-    setMainView(view);
-    if (view !== 'playlist') {
-      setSelectedPlaylistId(null);
-      setSelectedPlaylistName(null);
-    }
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
+  // Back/Forward also closes the phone menu
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [route]);
+
+  const handleNavigate = (view: View) => {
+    setMenuOpen(false);
+    if (view === 'home' || view === 'search' || view === 'all-songs') navigate({ view });
   };
 
-  const handlePlaylistClick = (playlistId: number, playlistName: string) => {
-    setSelectedPlaylistId(playlistId);
-    setSelectedPlaylistName(playlistName);
-    setMainView('playlist');
+  // The / shortcut: go to search and put the cursor in the box
+  const openSearch = () => {
+    if (route.view !== 'search') navigate({ view: 'search' });
+    setTimeout(() => document.querySelector<HTMLInputElement>('.search-input')?.focus(), 0);
   };
 
-  if (isLoading) {
-    return (
-      <div className="App" style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        height: '100vh'
-      }}>
-        <p style={{ color: 'var(--foreground)' }}>Loading...</p>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return authView === 'login' ? (
-      <Login onSwitchToSignup={() => setAuthView('signup')} />
-    ) : (
-      <Signup onSwitchToLogin={() => setAuthView('login')} />
-    );
-  }
+  const handlePlaylistClick = (playlistId: number) => {
+    setMenuOpen(false);
+    navigate({ view: 'playlist', id: playlistId });
+  };
 
   return (
     <ToastProvider>
       <FavoritesProvider>
         <PlaylistProvider>
           <div className="App">
+            {/* Only shown on phones and tablets (App.css) */}
+            <header className="mobile-topbar">
+              <button
+                type="button"
+                className="menu-button"
+                onClick={() => setMenuOpen(true)}
+                aria-label="Open menu"
+                aria-expanded={menuOpen}
+              >
+                <FontAwesomeIcon icon={faBars} />
+              </button>
+              <img src={logo} alt="" className="mobile-topbar-logo" />
+              <span className="mobile-topbar-title">Music Box</span>
+            </header>
+            {menuOpen && <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} />}
             <div className="app-container">
-              <Sidebar 
-                onNavigate={handleNavigate} 
-                currentView={mainView} 
-                onPlaylistClick={handlePlaylistClick}
-              />
-              <MainContent 
-                viewMode={mainView} 
+              <Sidebar
                 onNavigate={handleNavigate}
+                currentView={route.view}
+                onPlaylistClick={handlePlaylistClick}
                 selectedPlaylistId={selectedPlaylistId}
-                selectedPlaylistName={selectedPlaylistName}
+                isOpen={menuOpen}
+                onClose={() => setMenuOpen(false)}
               />
+              <MainContent route={route} navigate={navigate} />
             </div>
-            <MusicPlayer />
+            <MusicPlayer onOpenSearch={openSearch} />
           </div>
         </PlaylistProvider>
       </FavoritesProvider>
     </ToastProvider>
-  );
-};
-
-const App: React.FC = () => {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
   );
 };
 
