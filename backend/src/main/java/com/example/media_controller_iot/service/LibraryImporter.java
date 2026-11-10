@@ -19,10 +19,19 @@ import java.util.stream.Stream;
 /**
  * Imports the music folder into the songs table on startup.
  *
+ * <p>The folder can be flat or sorted into subfolders (e.g. {@code music/Lofi/...}), and covers
+ * can sit next to the audio or in their own folder tree (e.g. {@code cover/Lofi/...}).
+ *
  * <p>Tracks listed in {@code tracks.json} get their title, artist and category from there. A
- * listed track is matched to an audio file by its {@code file} name, or by its Pixabay id appearing
- * in the file name (Pixabay downloads are named like {@code artist-title-186374.mp3}). Any other
- * audio file in the folder is imported with a title taken from its file name. Existing songs are
+ * listed track is matched to an audio file by, in this order:
+ * <ol>
+ *   <li>its {@code file} name,</li>
+ *   <li>its Pixabay id as a whole token in the file name ({@code artist-title-186374.mp3}),</li>
+ *   <li>its {@code match} keywords as whole words in the file name (Pixabay's current downloads
+ *       are named like {@code penguinmusic-better-day.mp3}, without the id),</li>
+ *   <li>and only after every track had its chance, its title as whole words.</li>
+ * </ol>
+ * Any other audio file is imported with a title taken from its file name. Existing songs are
  * updated in place (matched by URL), so restarting never creates duplicates.
  */
 @Service
@@ -30,7 +39,9 @@ public class LibraryImporter {
 
     private static final Logger log = LoggerFactory.getLogger(LibraryImporter.class);
     static final Set<String> AUDIO = Set.of("mp3", "ogg", "wav", "m4a", "aac", "flac");
-    private static final List<String> COVER_EXTENSIONS = List.of("jpg", "jpeg", "png", "webp");
+    static final Set<String> IMAGES = Set.of("jpg", "jpeg", "png", "webp");
+    /** Uploaded files have their own song rows (see FileUploadController) */
+    private static final String UPLOADS = "uploads";
 
     private final MediaStorage storage;
     private final SongsRepo songsRepo;
@@ -45,7 +56,7 @@ public class LibraryImporter {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record TrackEntry(String file, Long pixabayId, String title, String artist,
-                             String category, String cover, String source) {}
+                             String category, String cover, List<String> match, String source) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Catalog(List<TrackEntry> tracks) {}
@@ -71,24 +82,36 @@ public class LibraryImporter {
         Path root = storage.root();
         Files.createDirectories(root);
 
-        List<Path> audioFiles = listAudio(root);
+        List<Path> audioFiles = listFiles(root, AUDIO);
+        List<Path> images = listFiles(root, IMAGES);
+        List<TrackEntry> catalog = readCatalog(root.resolve("tracks.json"));
+
+        // Pass 1: exact name, Pixabay id, then the listed keywords. Pass 2: the title, for the rest.
+        Map<TrackEntry, Path> matched = new LinkedHashMap<>();
         Set<Path> claimed = new HashSet<>();
+        for (TrackEntry entry : catalog) {
+            match(entry, audioFiles, claimed, false).ifPresent(f -> { matched.put(entry, f); claimed.add(f); });
+        }
+        for (TrackEntry entry : catalog) {
+            if (matched.containsKey(entry)) continue;
+            match(entry, audioFiles, claimed, true).ifPresent(f -> { matched.put(entry, f); claimed.add(f); });
+        }
+
         List<String> missing = new ArrayList<>();
         int[] counts = new int[2]; // imported, updated
-
-        for (TrackEntry entry : readCatalog(root.resolve("tracks.json"))) {
-            Optional<Path> file = match(entry, audioFiles);
-            if (file.isEmpty()) {
+        for (TrackEntry entry : catalog) {
+            Path file = matched.get(entry);
+            if (file == null) {
                 missing.add(entry.title() != null ? entry.title() : entry.file());
                 continue;
             }
-            claimed.add(file.get());
-            upsert(file.get(), entry.title(), entry.artist(), entry.category(), cover(root, entry.cover(), file.get()), counts);
+            upsert(file, entry.title(), entry.artist(), entry.category(),
+                    cover(root, entry, file, images), counts);
         }
 
         for (Path file : audioFiles) {
             if (claimed.contains(file)) continue;
-            upsert(file, titleFromFileName(file), "Unknown artist", "Other", cover(root, null, file), counts);
+            upsert(file, titleFromFileName(file), "Unknown artist", "Other", cover(root, null, file, images), counts);
         }
         return new Result(counts[0], counts[1], missing);
     }
@@ -99,40 +122,76 @@ public class LibraryImporter {
         return parsed.tracks() == null ? List.of() : parsed.tracks();
     }
 
-    private static List<Path> listAudio(Path root) throws IOException {
-        try (Stream<Path> files = Files.list(root)) {
+    /** Every file with one of the extensions, in all subfolders except uploads/ */
+    private static List<Path> listFiles(Path root, Set<String> extensions) throws IOException {
+        Path uploads = root.resolve(UPLOADS);
+        try (Stream<Path> files = Files.walk(root)) {
             return files.filter(Files::isRegularFile)
-                    .filter(f -> AUDIO.contains(extension(f)))
+                    .filter(f -> !f.startsWith(uploads))
+                    .filter(f -> extensions.contains(extension(f)))
                     .sorted()
                     .toList();
         }
     }
 
-    static Optional<Path> match(TrackEntry entry, List<Path> audioFiles) {
-        if (entry.file() != null) {
-            for (Path f : audioFiles) {
-                if (f.getFileName().toString().equalsIgnoreCase(entry.file())) return Optional.of(f);
+    static Optional<Path> match(TrackEntry entry, List<Path> audioFiles, Set<Path> claimed, boolean byTitle) {
+        List<Path> free = audioFiles.stream().filter(f -> !claimed.contains(f)).toList();
+        if (!byTitle) {
+            if (entry.file() != null) {
+                for (Path f : free) {
+                    if (f.getFileName().toString().equalsIgnoreCase(entry.file())) return Optional.of(f);
+                }
             }
+            if (entry.pixabayId() != null) {
+                Optional<Path> byId = findByWords(free, List.of(String.valueOf(entry.pixabayId())));
+                if (byId.isPresent()) return byId;
+            }
+            return findByWords(free, keywords(entry));
         }
-        if (entry.pixabayId() != null) {
-            String id = String.valueOf(entry.pixabayId());
-            for (Path f : audioFiles) {
-                String base = baseName(f);
-                // the id as a whole token, so 8303 does not match 183031
-                if (base.matches("(?:.*[^0-9])?" + id + "(?:[^0-9].*)?")) return Optional.of(f);
+        return entry.title() == null ? Optional.empty() : findByWords(free, List.of(normalize(entry.title())));
+    }
+
+    /**
+     * The first file whose name contains one of the keys as whole words, trying the keys in order.
+     * Whole words, so the id 8303 doesn't match a file named "...-183031".
+     */
+    static Optional<Path> findByWords(List<Path> files, List<String> keys) {
+        for (String key : keys) {
+            if (key.isEmpty()) continue;
+            for (Path f : files) {
+                if (("-" + normalize(baseName(f)) + "-").contains("-" + key + "-")) return Optional.of(f);
             }
         }
         return Optional.empty();
     }
 
-    private String cover(Path root, String listed, Path audio) {
-        if (listed != null && !listed.isBlank()) {
-            Path file = root.resolve(listed).normalize();
+    /** The listed keywords, then the short file name without its extension */
+    private static List<String> keywords(TrackEntry entry) {
+        List<String> keys = new ArrayList<>();
+        if (entry.match() != null) entry.match().forEach(m -> keys.add(normalize(m)));
+        if (entry.file() != null) keys.add(normalize(baseName(Path.of(entry.file()))));
+        keys.removeIf(String::isEmpty);
+        return keys;
+    }
+
+    /**
+     * The cover for an audio file: the one listed in tracks.json, else an image with the same name
+     * next to it or anywhere in the folder (e.g. a parallel cover/ tree), else an image whose name
+     * contains one of the track's keywords.
+     */
+    private String cover(Path root, TrackEntry entry, Path audio, List<Path> images) {
+        if (entry != null && entry.cover() != null && !entry.cover().isBlank()) {
+            Path file = root.resolve(entry.cover()).normalize();
             if (file.startsWith(root) && Files.isRegularFile(file)) return storage.urlFor(file);
         }
-        for (String ext : COVER_EXTENSIONS) {
-            Path sibling = audio.resolveSibling(baseName(audio) + "." + ext);
-            if (Files.isRegularFile(sibling)) return storage.urlFor(sibling);
+        String base = normalize(baseName(audio));
+        Optional<Path> sameName = images.stream()
+                .filter(img -> normalize(baseName(img)).equals(base))
+                .min(Comparator.comparing((Path img) -> !img.getParent().equals(audio.getParent())));
+        if (sameName.isPresent()) return storage.urlFor(sameName.get());
+        if (entry != null) {
+            Optional<Path> byKeyword = findByWords(images, keywords(entry));
+            if (byKeyword.isPresent()) return storage.urlFor(byKeyword.get());
         }
         return null;
     }
@@ -154,6 +213,11 @@ public class LibraryImporter {
         String spaced = baseName(file).replaceAll("[-_]+", " ").replaceAll("\\s+", " ").trim();
         if (spaced.isEmpty()) return file.getFileName().toString();
         return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
+    }
+
+    /** Lower case, with every run of other characters turned into one dash: "Hip Hop_Beat" -> "hip-hop-beat" */
+    static String normalize(String s) {
+        return s == null ? "" : s.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
     }
 
     private static String baseName(Path file) {

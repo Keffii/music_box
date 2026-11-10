@@ -11,12 +11,12 @@
     { "file": "lofi-chill.mp3", "pixabayId": 456265, "title": "Lofi Chill", "artist": "DELOSound", "category": "Lofi", "source": "https://pixabay.com/music/lofi-lofi-lofi-chill-lofi-girl-456265/" },
 
     { "file": "hype-drill-music.mp3", "pixabayId": 438398, "title": "Hype Drill Music", "artist": "kontraa", "category": "Hiphop", "source": "https://pixabay.com/music/trap-hype-drill-music-438398/" },
-    { "file": "lonewolf-dark-trap.mp3", "pixabayId": 156895, "title": "Lonewolf Dark Trap", "artist": "onesevenbeatxs", "category": "Hiphop", "source": "https://pixabay.com/music/trap-lonewolf-dark-hard-sad-trap-beat-prod-by-onesevenbeatxs-156895/" },
-    { "file": "hip-hop-beat.mp3", "pixabayId": 427992, "title": "Hip Hop Beat", "artist": "NastelBom", "category": "Hiphop", "source": "https://pixabay.com/music/beats-hiphop-427992/" },
+    { "file": "lonewolf-dark-trap.mp3", "pixabayId": 156895, "title": "Lonewolf Dark Trap", "artist": "onesevenbeatxs", "category": "Hiphop", "match": ["lonewolf-dark-hard-sad-trap"], "source": "https://pixabay.com/music/trap-lonewolf-dark-hard-sad-trap-beat-prod-by-onesevenbeatxs-156895/" },
+    { "file": "hip-hop-beat.mp3", "pixabayId": 427992, "title": "Hip Hop Beat", "artist": "NastelBom", "category": "Hiphop", "match": ["nastelbom-hip-hop"], "source": "https://pixabay.com/music/beats-hiphop-427992/" },
     { "file": "energetic-hip-hop.mp3", "pixabayId": 8303, "title": "Energetic Hip Hop", "artist": "Skilsel", "category": "Hiphop", "source": "https://pixabay.com/music/beats-energetic-hip-hop-8303/" },
 
     { "file": "trance-dance-club.mp3", "pixabayId": 409571, "title": "Trance Dance Club", "artist": "lNPLUSMUSIC", "category": "Trance", "source": "https://pixabay.com/music/upbeat-trance-dance-club-music-409571/" },
-    { "file": "trance.mp3", "pixabayId": 123192, "title": "Trance", "artist": "Playsound", "category": "Trance", "source": "https://pixabay.com/music/techno-trance-trance-123192/" },
+    { "file": "trance.mp3", "pixabayId": 123192, "title": "Trance", "artist": "Playsound", "category": "Trance", "match": ["playsound-trance"], "source": "https://pixabay.com/music/techno-trance-trance-123192/" },
     { "file": "smart-factory.mp3", "pixabayId": 137032, "title": "Smart Factory", "artist": "The_Mountain", "category": "Trance", "source": "https://pixabay.com/music/dance-trance-137032/" },
     { "file": "pure-trance.mp3", "pixabayId": 459528, "title": "Pure Trance", "artist": "DJDoblina", "category": "Trance", "source": "https://pixabay.com/music/electro-pure-trance-459528/" }
   ]

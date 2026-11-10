@@ -35,7 +35,79 @@ class LibraryImporterTest {
     }
 
     private void touch(String name) throws Exception {
-        Files.write(root.resolve(name), new byte[]{1, 2, 3});
+        Path file = root.resolve(name);
+        Files.createDirectories(file.getParent());
+        Files.write(file, new byte[]{1, 2, 3});
+    }
+
+    /** The real music/tracks.json from the repo */
+    private void realCatalog() throws Exception {
+        Files.copy(Path.of("..", "music", "tracks.json"), root.resolve("tracks.json"));
+    }
+
+    @Test
+    void importsGenreFoldersWithPixabaysCurrentNamesAndACoverTree() throws Exception {
+        realCatalog();
+        // The layout of a real download: genre subfolders, Pixabay's current names (mostly without
+        // the id), and covers in a parallel cover/ tree
+        String[] audio = {
+                "Electronic/alex_makemusic-running-night-393139", "Electronic/grand_project-abstract-beauty",
+                "Electronic/nveravetyanmusic-cascade-breathe-future-garage", "Electronic/penguinmusic-better-day",
+                "Hip Hop/kontraa-hype-drill-music", "Hip Hop/nastelbom-hip-hop-427992",
+                "Hip Hop/onesevenbeatxs-lonewolf-dark-hard-sad-trap-beat-prod-by-onesevenbeatxs",
+                "Hip Hop/skilsel-energetic-hip-hop-8303",
+                "Lofi/delosound-lofi-lofi-chill-lofi-girl", "Lofi/fassounds-good-night-lofi-cozy-chill-music",
+                "Lofi/fassounds-lofi-study-calm-peaceful-chill-hop", "Lofi/lofi_music_library-coffee-lofi-lofi-music-chill-ambient",
+                "Trance/djdoblina-pure-trance", "Trance/lnplusmusic-trance-dance-club-music",
+                "Trance/playsound-trance", "Trance/the_mountain-smart-factory"};
+        for (String a : audio) {
+            touch("music/" + a + ".mp3");
+            // the one cover without the id in its name
+            touch("cover/" + a.replace("-427992", "") + ".jpg");
+        }
+
+        LibraryImporter.Result result = importer().importLibrary();
+
+        assertThat(result.missing()).isEmpty();
+        assertThat(result.imported()).isEqualTo(16);
+        assertThat(db.values()).allSatisfy(s -> {
+            assertThat(s.getCategory()).isNotEqualTo("Other");
+            assertThat(s.getCoverUrl()).startsWith("/media/cover/");
+        });
+        // The generic title "Trance" must not take "Pure Trance"'s file
+        assertThat(byTitle("Trance").getSrcUrl()).isEqualTo("/media/music/Trance/playsound-trance.mp3");
+        assertThat(byTitle("Pure Trance").getSrcUrl()).isEqualTo("/media/music/Trance/djdoblina-pure-trance.mp3");
+        assertThat(byTitle("Lonewolf Dark Trap").getCategory()).isEqualTo("Hiphop");
+        // Folder names with spaces are encoded in the URL
+        assertThat(byTitle("Hip Hop Beat").getSrcUrl()).isEqualTo("/media/music/Hip%20Hop/nastelbom-hip-hop-427992.mp3");
+        assertThat(byTitle("Hip Hop Beat").getCoverUrl()).isEqualTo("/media/cover/Hip%20Hop/nastelbom-hip-hop.jpg");
+    }
+
+    @Test
+    void titleIsOnlyALastResort() throws Exception {
+        catalog("""
+                {"tracks": [
+                  {"title": "Night", "category": "Lofi"},
+                  {"title": "Good Night", "match": ["good-night"], "category": "Lofi"}
+                ]}""");
+        touch("someone-good-night.mp3");
+        touch("night.mp3");
+
+        importer().importLibrary();
+
+        // "Good Night" claims its file by keyword before "Night" falls back to its title
+        assertThat(byTitle("Good Night").getSrcUrl()).isEqualTo("/media/someone-good-night.mp3");
+        assertThat(byTitle("Night").getSrcUrl()).isEqualTo("/media/night.mp3");
+    }
+
+    @Test
+    void leavesUploadsToTheUploadController() throws Exception {
+        touch("uploads/music/abc-upload.mp3");
+        touch("song.mp3");
+
+        importer().importLibrary();
+
+        assertThat(db.keySet()).containsExactly("/media/song.mp3");
     }
 
     private void catalog(String json) throws Exception {
