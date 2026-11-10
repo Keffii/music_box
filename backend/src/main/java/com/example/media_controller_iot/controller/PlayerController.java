@@ -1,15 +1,19 @@
 package com.example.media_controller_iot.controller;
 
+import com.example.media_controller_iot.service.DemoUser;
 import com.example.media_controller_iot.service.PlayerService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The web player's API. There are no accounts in the local demo: every browser and the ESP32
+ * remote control the same shared player (see DemoUser).
+ */
 @RestController
 @RequestMapping("/api/player")
 public class PlayerController {
@@ -21,19 +25,11 @@ public class PlayerController {
     }
 
     @PostMapping("/command")
-    public ResponseEntity<Void> playCommand(@RequestBody Map<String, String> body, Authentication authentication) {
+    public ResponseEntity<Void> playCommand(@RequestBody Map<String, String> body) {
         String command = body.get("command");
-        String userId = getCurrentUserId(authentication);
-        return playerService.mediaCommands(command, userId)
+        return playerService.mediaCommands(command, DemoUser.ID)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.badRequest().build();
-    }
-
-    private String getCurrentUserId(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            return jwt.getSubject();
-        }
-        return null;
     }
 
     @GetMapping("/state")
@@ -41,8 +37,13 @@ public class PlayerController {
         return playerService.getState();
     }
 
+    /** Live player updates (server-sent events), plus a heartbeat comment every 15 s */
     @GetMapping("/stream")
-    public SseEmitter stream() {
+    public SseEmitter stream(HttpServletResponse response) {
+        // Don't let a proxy buffer the stream
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+
         SseEmitter emitter = new SseEmitter(0L); // no timeout
         playerService.addEmitter(emitter);
 
@@ -59,18 +60,17 @@ public class PlayerController {
     }
 
     @PostMapping("/playlist-queue")
-    public void setPlaylistQueue(@RequestBody Map<String, Object> body, Authentication authentication) {
-        String userId = getCurrentUserId(authentication);
+    public void setPlaylistQueue(@RequestBody Map<String, Object> body) {
         @SuppressWarnings("unchecked")
         List<Integer> songIdsInt = (List<Integer>) body.get("songIds");
-        
+
         if (songIdsInt == null) {
-            playerService.setPlaylistQueue(null, userId);
+            playerService.setPlaylistQueue(null, DemoUser.ID);
         } else {
             List<Long> songIds = songIdsInt.stream()
                     .map(Integer::longValue)
                     .toList();
-            playerService.setPlaylistQueue(songIds, userId);
+            playerService.setPlaylistQueue(songIds, DemoUser.ID);
         }
     }
 }

@@ -3,8 +3,7 @@ package com.example.media_controller_iot.controller;
 import com.example.media_controller_iot.models.Songs;
 import com.example.media_controller_iot.repository.PlayerCommandLogRepo;
 import com.example.media_controller_iot.repository.SongsRepo;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
+import com.example.media_controller_iot.service.DemoUser;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,30 +24,24 @@ public class SongController {
     public List<Songs> getAllSongs() {
         return songRepository.findAll();
     }
-    
+
     @GetMapping("/songs/category/{category}")
     public List<Songs> getSongsByCategory(@PathVariable String category) {
         return songRepository.findByCategory(category);
     }
-    
+
+    /** Matches the title, the artist or the genre */
     @GetMapping("/songs/search")
     public List<Songs> searchSongs(@RequestParam String query) {
         if (query == null || query.trim().isEmpty()) {
             return List.of();
         }
-        return songRepository.searchByTitleOrArtist(query.trim());
+        return songRepository.searchByTitleArtistOrCategory(query.trim());
     }
 
+    /** The shared player's history (the web player and the remote together) */
     @GetMapping("/recently-played")
-    public List<Songs> getRecentlyPlayed(Authentication authentication) {
-        String userId = getCurrentUserId(authentication);
-        return commandLogRepository.findRecentlyPlayedSongsByUserId(userId);
-    }
-
-    private String getCurrentUserId(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            return jwt.getSubject();
-        }
-        throw new IllegalStateException("User is not authenticated");
+    public List<Songs> getRecentlyPlayed() {
+        return commandLogRepository.findRecentlyPlayedSongsByUserId(DemoUser.ID);
     }
 }

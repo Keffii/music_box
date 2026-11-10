@@ -9,6 +9,7 @@ import com.example.media_controller_iot.repository.VolumeLogRepo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -75,6 +76,26 @@ public class PlayerService {
 
     public void addEmitter(SseEmitter emitter) { emitters.add(emitter); }
     public void removeEmitter(SseEmitter emitter) { emitters.remove(emitter); }
+
+    /**
+     * Sends an SSE comment to every open stream every 15 s, so idle streams aren't closed by a
+     * proxy or the browser, and dead clients are noticed and dropped.
+     */
+    @Scheduled(fixedRate = 15000)
+    public void heartbeat() {
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event().comment("ping"));
+            } catch (Exception e) {
+                emitters.remove(emitter);
+            }
+        }
+    }
+
+    /** Plays are recorded under the shared demo user, also when they come from the remote */
+    private static String logUser(String userId) {
+        return userId != null && !userId.isBlank() ? userId : DemoUser.ID;
+    }
 
     private void broadcastState() {
         Map<String, Object> state = getState();
@@ -199,7 +220,7 @@ public class PlayerService {
 
         lastCommand = cmd;
         seq++;
-        playerCommandLogRepo.save(new PlayerCommandLog(cmd, currentSong, userId));
+        playerCommandLogRepo.save(new PlayerCommandLog(cmd, currentSong, logUser(userId)));
         broadcastState();
         return true;
     }
@@ -218,7 +239,7 @@ public class PlayerService {
                     isPlaying = true;
                     lastCommand = "PLAY";
                     seq++;
-                    playerCommandLogRepo.save(new PlayerCommandLog("PLAY", song, userId));
+                    playerCommandLogRepo.save(new PlayerCommandLog("PLAY", song, logUser(userId)));
                 });
             }
         }

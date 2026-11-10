@@ -1,13 +1,11 @@
 package com.example.media_controller_iot.controller;
 
+import com.example.media_controller_iot.service.DemoUser;
 import com.example.media_controller_iot.models.Songs;
 import com.example.media_controller_iot.service.FavoriteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -20,27 +18,16 @@ public class FavoriteController {
     
     @Autowired
     private FavoriteService favoriteService;
-    
-    /**
-     * Get the current user ID from JWT token
-     */
-    private String getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
-            Jwt jwt = (Jwt) authentication.getPrincipal();
-            // The token's 'sub' claim is the user id
-            return jwt.getSubject();
-        }
-        throw new RuntimeException("User not authenticated");
-    }
-    
+
+    // No accounts in the local demo: everyone shares the demo user's favourites (see DemoUser)
+
     /**
      * GET /api/favorites - Get all favorite songs for current user
      */
     @GetMapping
     public ResponseEntity<List<Songs>> getUserFavorites() {
         try {
-            String userId = getCurrentUserId();
+            String userId = DemoUser.ID;
             List<Songs> favorites = favoriteService.getUserFavorites(userId);
             return ResponseEntity.ok(favorites);
         } catch (Exception e) {
@@ -54,7 +41,7 @@ public class FavoriteController {
     @PostMapping("/{songId}")
     public ResponseEntity<Map<String, Object>> addFavorite(@PathVariable Long songId) {
         try {
-            String userId = getCurrentUserId();
+            String userId = DemoUser.ID;
             favoriteService.addFavorite(userId, songId);
             
             Map<String, Object> response = new HashMap<>();
@@ -82,7 +69,7 @@ public class FavoriteController {
     @DeleteMapping("/{songId}")
     public ResponseEntity<Map<String, Object>> removeFavorite(@PathVariable Long songId) {
         try {
-            String userId = getCurrentUserId();
+            String userId = DemoUser.ID;
             favoriteService.removeFavorite(userId, songId);
             
             Map<String, Object> response = new HashMap<>();
@@ -105,7 +92,7 @@ public class FavoriteController {
     @GetMapping("/check/{songId}")
     public ResponseEntity<Map<String, Boolean>> checkFavorite(@PathVariable Long songId) {
         try {
-            String userId = getCurrentUserId();
+            String userId = DemoUser.ID;
             boolean isFavorite = favoriteService.isFavorite(userId, songId);
             
             Map<String, Boolean> response = new HashMap<>();
@@ -123,7 +110,7 @@ public class FavoriteController {
     @GetMapping("/count")
     public ResponseEntity<Map<String, Long>> getFavoriteCount() {
         try {
-            String userId = getCurrentUserId();
+            String userId = DemoUser.ID;
             long count = favoriteService.getFavoriteCount(userId);
             
             Map<String, Long> response = new HashMap<>();
@@ -141,7 +128,7 @@ public class FavoriteController {
     @DeleteMapping
     public ResponseEntity<Map<String, Object>> clearAllFavorites() {
         try {
-            String userId = getCurrentUserId();
+            String userId = DemoUser.ID;
             favoriteService.clearAllFavorites(userId);
             
             Map<String, Object> response = new HashMap<>();

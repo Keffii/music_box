@@ -3,16 +3,14 @@ package com.example.media_controller_iot.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -20,6 +18,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * The local demo has no accounts: the web player's API is open (it runs on your own machine).
+ * Only the ESP32 remote's API is protected, by the shared key in the X-Device-Key header.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -32,33 +34,18 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
-                // EventSource cannot send an Authorization header
-                .requestMatchers(HttpMethod.GET, "/api/player/stream").permitAll()
-                // <audio> and <img> cannot send headers either; the files are public tracks and covers
-                .requestMatchers(HttpMethod.GET, "/media/**").permitAll()
-                // the ESP32 remote: shared key only, a user JWT is not enough
+                // the ESP32 remote: shared key only
                 .requestMatchers("/api/device/**").hasRole(DeviceKeyFilter.ROLE)
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
             )
-            .addFilterBefore(new DeviceKeyFilter(deviceKey), BearerTokenAuthenticationFilter.class)
-            .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()));
+            .addFilterBefore(new DeviceKeyFilter(deviceKey), AnonymousAuthenticationFilter.class)
+            // A missing or wrong device key is 401, which the firmware shows as "bad key"
+            .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
 
         return http.build();
     }
 
-    @Bean
-    public JwtDecoder jwtDecoder(JwtService jwtService) {
-        return jwtService.decoder();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    /** Only matters when the React dev server runs on its own port; in Docker nginx serves both on one origin. */
+    /** Only matters when the React dev server runs on its own port; nginx serves both on one origin. */
     @Bean
     public CorsConfigurationSource corsConfigurationSource(@Value("${cors.allowed.origins}") String allowedOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();

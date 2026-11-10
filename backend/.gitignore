@@ -36,3 +36,6 @@ build/
 # Build artifacts
 *.jar
 *.zip
+
+# Embedded H2 database (the default when running without Docker)
+data/

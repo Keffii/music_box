@@ -1,5 +1,6 @@
 package com.example.media_controller_iot.controller;
 
+import com.example.media_controller_iot.service.DemoUser;
 import com.example.media_controller_iot.models.Playlist;
 import com.example.media_controller_iot.models.PlaylistSong;
 import com.example.media_controller_iot.models.Songs;
@@ -9,8 +10,6 @@ import com.example.media_controller_iot.repository.SongsRepo;
 import com.example.media_controller_iot.service.PlaylistEventService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -53,16 +52,15 @@ public class PlaylistController {
 
     // Get all playlists for current user
     @GetMapping
-    public List<Playlist> getUserPlaylists(Authentication authentication) {
-        String userId = getCurrentUserId(authentication);
+    public List<Playlist> getUserPlaylists() {
+        String userId = DemoUser.ID;
         return playlistRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
     // Create a new playlist
     @PostMapping
-    public ResponseEntity<Playlist> createPlaylist(@RequestBody Map<String, String> request,
-                                                    Authentication authentication) {
-        String userId = getCurrentUserId(authentication);
+    public ResponseEntity<Playlist> createPlaylist(@RequestBody Map<String, String> request) {
+        String userId = DemoUser.ID;
         String name = request.get("name");
 
         if (name == null || name.trim().isEmpty()) {
@@ -79,12 +77,32 @@ public class PlaylistController {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedPlaylist);
     }
 
+    // Rename a playlist
+    @PutMapping("/{playlistId}")
+    public ResponseEntity<Playlist> renamePlaylist(@PathVariable Long playlistId,
+                                                   @RequestBody Map<String, String> request) {
+        String userId = DemoUser.ID;
+        String name = request.get("name");
+        if (name == null || name.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return playlistRepository.findById(Objects.requireNonNull(playlistId))
+                .map(playlist -> {
+                    if (!playlist.getUserId().equals(userId)) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).<Playlist>build();
+                    }
+                    playlist.setName(name.trim());
+                    return ResponseEntity.ok(playlistRepository.save(playlist));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // Delete a playlist
     @DeleteMapping("/{playlistId}")
     @Transactional
-    public ResponseEntity<Map<String, Boolean>> deletePlaylist(@PathVariable Long playlistId,
-                                                                Authentication authentication) {
-        String userId = getCurrentUserId(authentication);
+    public ResponseEntity<Map<String, Boolean>> deletePlaylist(@PathVariable Long playlistId) {
+        String userId = DemoUser.ID;
 
         return playlistRepository.findById(Objects.requireNonNull(playlistId))
                 .map(playlist -> {
@@ -105,9 +123,8 @@ public class PlaylistController {
 
     // Get songs in a playlist
     @GetMapping("/{playlistId}/songs")
-    public ResponseEntity<List<Songs>> getPlaylistSongs(@PathVariable Long playlistId,
-                                                         Authentication authentication) {
-        String userId = getCurrentUserId(authentication);
+    public ResponseEntity<List<Songs>> getPlaylistSongs(@PathVariable Long playlistId) {
+        String userId = DemoUser.ID;
 
         return playlistRepository.findById(Objects.requireNonNull(playlistId))
                 .map(playlist -> {
@@ -127,9 +144,8 @@ public class PlaylistController {
     @PostMapping("/{playlistId}/songs/{songId}")
     @Transactional
     public ResponseEntity<Map<String, Boolean>> addSongToPlaylist(@PathVariable Long playlistId,
-                                                                   @PathVariable Long songId,
-                                                                   Authentication authentication) {
-        String userId = getCurrentUserId(authentication);
+                                                                   @PathVariable Long songId) {
+        String userId = DemoUser.ID;
 
         return playlistRepository.findById(Objects.requireNonNull(playlistId))
                 .map(playlist -> {
@@ -166,9 +182,8 @@ public class PlaylistController {
     @DeleteMapping("/{playlistId}/songs/{songId}")
     @Transactional
     public ResponseEntity<Map<String, Boolean>> removeSongFromPlaylist(@PathVariable Long playlistId,
-                                                                        @PathVariable Long songId,
-                                                                        Authentication authentication) {
-        String userId = getCurrentUserId(authentication);
+                                                                        @PathVariable Long songId) {
+        String userId = DemoUser.ID;
 
         return playlistRepository.findById(Objects.requireNonNull(playlistId))
                 .map(playlist -> {
@@ -188,8 +203,8 @@ public class PlaylistController {
 
     // Get playlist with song count
     @GetMapping("/with-counts")
-    public ResponseEntity<List<Map<String, Object>>> getPlaylistsWithCounts(Authentication authentication) {
-        String userId = getCurrentUserId(authentication);
+    public ResponseEntity<List<Map<String, Object>>> getPlaylistsWithCounts() {
+        String userId = DemoUser.ID;
         List<Playlist> playlists = playlistRepository.findByUserIdOrderByCreatedAtDesc(userId);
 
         List<Map<String, Object>> playlistsWithCounts = playlists.stream()
@@ -208,12 +223,5 @@ public class PlaylistController {
                 .toList();
 
         return ResponseEntity.ok(playlistsWithCounts);
-    }
-
-    private String getCurrentUserId(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
-            return jwt.getSubject();
-        }
-        throw new IllegalStateException("User is not authenticated");
     }
 }
