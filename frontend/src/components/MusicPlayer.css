@@ -207,6 +207,56 @@
   max-width: 170px;
 }
 
+/* Holds the slider and the percentage above its thumb */
+.volume-slider-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* Over the thumb: the 12px thumb's centre runs from 6px to (width - 6px) */
+.volume-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: calc(6px + (100% - 12px) * var(--volume, 0) / 100);
+  transform: translateX(-50%) translateY(3px);
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--popover, var(--card));
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+/* a small arrow pointing at the thumb */
+.volume-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--border);
+}
+
+.volume-slider:hover + .volume-tooltip,
+.volume-slider:active + .volume-tooltip,
+.volume-slider:focus-visible + .volume-tooltip,
+.volume-tooltip.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .player-volume-icon {
   background: none;
   border: none;
@@ -226,54 +276,6 @@
 
 .player-volume-icon:hover {
   color: var(--foreground);
-}
-
-/* Holds the volume slider and the percentage bubble above its thumb */
-.volume-slider-wrap {
-  position: relative;
-  flex: 1;
-  display: flex;
-  align-items: center;
-}
-
-.volume-bubble {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  transform: translate(-50%, 4px);
-  padding: 3px 7px;
-  border-radius: 6px;
-  background: var(--foreground);
-  color: var(--background);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-/* Small arrow pointing down at the thumb */
-.volume-bubble::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: var(--foreground);
-}
-
-.volume-bubble.is-visible {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .volume-bubble {
-    transition: none;
-  }
 }
 
 .grafana-link {
