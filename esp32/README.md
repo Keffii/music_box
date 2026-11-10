@@ -4,6 +4,10 @@ A physical remote for the Music Box web player. Five buttons and a volume knob s
 WiFi, and a 1.27" colour OLED shows the current track, the play state, the volume and an animated
 equalizer. Each press gets instant on-screen feedback.
 
+The remote controls the same **shared player** as the website: Music Box has no accounts, so every
+open browser and the remote are in sync. Press Next on the remote and the OLED and every open
+website change song together; change the song or volume on the website and the OLED follows.
+
 The firmware is plain C on **ESP-IDF v5.3 or newer** (no Arduino). Everything is set in `menuconfig`.
 
 ## Parts
@@ -43,9 +47,10 @@ ADC1 pin (GPIO 32-39). All pins can be changed in `menuconfig`.
 
 ## Setup
 
-1. Start Music Box on your computer (`docker compose up --build` in the repository root), then find
-   the computer's LAN IP address (`ipconfig` on Windows, `ip addr` on Linux, `ipconfig getifaddr en0`
-   on macOS).
+1. Start Music Box on your computer: the backend with `mvnw spring-boot:run` in `backend/` (see the
+   main README; the remote talks to it on port 8080), or `docker compose up --build`. Then find the
+   computer's LAN IP address (`ipconfig` on Windows, `ip addr` on Linux, `ipconfig getifaddr en0` on
+   macOS). Windows may ask to allow Java through the firewall: allow it on private networks.
 2. Install ESP-IDF v5.3+ (see the [ESP-IDF Get Started guide](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/)),
    or use Docker as shown below.
 3. Configure the remote:
@@ -139,6 +144,7 @@ python tools/make_fonts.py Inter.ttf main
 - **Image is upside down or mirrored**: toggle *Rotate the display 180 degrees*.
 - **"Connecting to WiFi" never ends**: check the SSID and password, and that the network is 2.4 GHz.
 - **"Music Box unreachable"**: check the URL (it must be the computer's LAN IP, not `localhost`), the
-  firewall, and that `docker compose ps` shows the stack running. The serial monitor logs a hint
+  firewall (allow Java on private networks), and that the backend is running: open
+  `http://<LAN IP>:8080/api/player/state` from another device. The serial monitor logs a hint
   when the device key is wrong (HTTP 401/403).
 - **Knob works backwards**: enable *Invert knob direction*.

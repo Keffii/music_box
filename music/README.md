@@ -1,7 +1,7 @@
 # Music folder
 
 The backend imports this folder into the library every time it starts, and serves the files at `/media/...`.
-Docker mounts it into the backend container at `/music`.
+To use a folder elsewhere, set `MUSIC_DIR` for the backend. Docker mounts this one at `/music`.
 
 The repository has **no audio files**. The demo tracks are royalty-free from Pixabay, but the
 [Pixabay Content License](https://pixabay.com/service/license-summary/) doesn't allow
@@ -10,11 +10,13 @@ redistributing them on their own, so each person downloads them from Pixabay.
 ## Getting the demo tracks
 
 1. Open each link below and click **Download**. This is free, but Pixabay may ask you to sign in.
-2. Put the `.mp3` files directly in this folder (`music/`). You don't need to rename them:
-   Pixabay's file names end with the track id (for example `penguinmusic-better-day-186374.mp3`),
-   and the importer matches files on that id. You can also rename a file to the `file` name given in
-   [`tracks.json`](tracks.json).
-3. Restart the backend (`docker compose restart backend`). New files show up in the library.
+2. Put the `.mp3` files in this folder (`music/`), either directly or sorted into subfolders such
+   as `music/Lofi/`. You don't need to rename them. The importer matches each file to its entry in
+   [`tracks.json`](tracks.json) by, in order: the `file` name, the Pixabay id in the name (older
+   downloads look like `penguinmusic-better-day-186374.mp3`), the `match` keywords or the short
+   `file` name as whole words (current downloads look like `penguinmusic-better-day.mp3`), and
+   last the title.
+3. Restart the backend. New files show up in the library.
 
 | Genre | Track | Artist | Link |
 |---|---|---|---|
@@ -39,8 +41,14 @@ You don't need all 16. Tracks without a file are skipped, and the backend log li
 
 ## Covers (optional)
 
-To give a track a cover, put an image next to it with the same base name
-(`better-day.mp3` and `better-day.jpg`), or set `"cover": "covers/better-day.jpg"` in `tracks.json`.
+To give a track a cover, use one of these (`jpg`, `jpeg`, `png` or `webp`):
+
+- an image with the same base name, next to the audio or anywhere else in the folder, for example a
+  parallel tree: `music/Lofi/fassounds-lofi-study-calm-peaceful-chill-hop.mp3` and
+  `cover/Lofi/fassounds-lofi-study-calm-peaceful-chill-hop.jpg`
+- an image whose name contains one of the track's `match` keywords
+- `"cover": "covers/better-day.jpg"` in `tracks.json`
+
 Tracks without a cover show a generated placeholder.
 
 ## Your own music

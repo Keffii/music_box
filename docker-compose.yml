@@ -33,8 +33,6 @@ services:
       MUSIC_DIR: /music
       # Shared key for the ESP32 remote. It must match CONFIG_MUSICBOX_DEVICE_KEY in the firmware.
       DEVICE_KEY: ${DEVICE_KEY:-musicbox-demo-key}
-      # Optional, at least 32 characters. Without it, logins reset when the backend restarts.
-      JWT_SECRET: ${JWT_SECRET:-}
     volumes:
       - ./music:/music
     depends_on:
