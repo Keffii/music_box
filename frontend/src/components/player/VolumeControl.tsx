@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faVolumeXmark, faVolumeHigh } from '@fortawesome/free-solid-svg-icons';
 
+/** How long the percentage stays up after the volume changes */
+export const VOLUME_TIP_MS = 1200;
+
 interface VolumeControlProps {
   volume: number;
   isMuted: boolean;
@@ -11,11 +14,6 @@ interface VolumeControlProps {
   onMute: () => void;
 }
 
-/** How long the percentage bubble stays up after the last change */
-const BUBBLE_MS = 1000;
-/** Width of the slider thumb in px, so the bubble sits right over it */
-const THUMB_PX = 12;
-
 export const VolumeControl: React.FC<VolumeControlProps> = ({
   volume,
   isMuted,
@@ -24,31 +22,21 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
   onVolumeChangeEnd,
   onMute,
 }) => {
-  const [bubbleVisible, setBubbleVisible] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const firstRender = useRef(true);
+  const shown = isMuted ? 0 : volume;
 
-  // Show the bubble whenever the volume changes: the slider, the keyboard, or another device
+  // The percentage shows on hover and keyboard focus (CSS), and for a moment after every change,
+  // also one from the remote's knob or a keyboard shortcut. Not on the first render.
+  const [recentChange, setRecentChange] = useState(false);
+  const firstRender = useRef(true);
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
-    setBubbleVisible(true);
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setBubbleVisible(false), BUBBLE_MS);
-  }, [volume, isMuted]);
-
-  useEffect(() => () => {
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-  }, []);
-
-  const muted = isMuted || volume === 0;
-  const endDrag = () => {
-    setDragging(false);
-    onVolumeChangeEnd();
-  };
+    setRecentChange(true);
+    const timer = setTimeout(() => setRecentChange(false), VOLUME_TIP_MS);
+    return () => clearTimeout(timer);
+  }, [shown]);
 
   return (
     <div className="player-volume-container">
@@ -57,15 +45,15 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
         type="button"
         className="player-volume-icon"
         onClick={onMute}
-        title={muted ? 'Unmute' : 'Mute'}
+        title={isMuted || volume === 0 ? 'Unmute' : 'Mute'}
       >
         <FontAwesomeIcon
-          icon={muted ? faVolumeXmark : faVolumeHigh}
+          icon={isMuted || volume === 0 ? faVolumeXmark : faVolumeHigh}
           size="xl"
           fixedWidth
         />
       </button>
-      <div className="volume-slider-wrap">
+      <div className="volume-slider-wrap" style={{ '--volume': shown } as React.CSSProperties}>
         <input
           ref={volumeSliderRef}
           className="volume-slider"
@@ -74,21 +62,13 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
           max="100"
           value={volume}
           aria-label="Volume"
-          aria-valuetext={isMuted ? 'Muted' : `${volume}%`}
+          aria-valuetext={`${shown}%`}
           onChange={onVolumeChange}
-          onPointerDown={() => setDragging(true)}
-          onMouseUp={endDrag}
-          onTouchEnd={endDrag}
-          onPointerCancel={() => setDragging(false)}
+          onMouseUp={onVolumeChangeEnd}
+          onTouchEnd={onVolumeChangeEnd}
         />
-        <span
-          className={`volume-bubble${bubbleVisible || dragging ? ' is-visible' : ''}`}
-          style={{
-            left: `calc(${volume}% + ${THUMB_PX / 2 - (volume / 100) * THUMB_PX}px)`,
-          }}
-          aria-hidden="true"
-        >
-          {isMuted ? 'Muted' : `${volume}%`}
+        <span className={`volume-tooltip${recentChange ? ' visible' : ''}`} aria-hidden="true">
+          {shown}%
         </span>
       </div>
     </div>
