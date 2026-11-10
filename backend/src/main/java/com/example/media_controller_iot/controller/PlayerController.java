@@ -40,9 +40,10 @@ public class PlayerController {
     /** Live player updates (server-sent events), plus a heartbeat comment every 15 s */
     @GetMapping("/stream")
     public SseEmitter stream(HttpServletResponse response) {
-        // Don't let a proxy buffer the stream
+        // Don't let a proxy buffer the stream: nginx reads X-Accel-Buffering, and no-transform
+        // stops gzip (e.g. the React dev server's proxy), which would otherwise hold events back
         response.setHeader("X-Accel-Buffering", "no");
-        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Cache-Control", "no-cache, no-transform");
 
         SseEmitter emitter = new SseEmitter(0L); // no timeout
         playerService.addEmitter(emitter);
