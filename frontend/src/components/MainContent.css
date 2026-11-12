@@ -130,14 +130,9 @@
 }
 
 /* Stand-ins with the exact size of a song card, shown before anything has been played */
+/* Keeps the row's height with no history yet, but shows nothing */
 .music-card--placeholder {
-  cursor: default;
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.music-card--placeholder .card-image {
-  box-shadow: none;
+  visibility: hidden;
 }
 
 .recent-empty-note {
