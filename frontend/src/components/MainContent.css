@@ -161,7 +161,6 @@
 .song-card-wrap.menu-open .music-card,
 .music-card:focus-visible {
   background-color: var(--secondary);
-  transform: translateY(-2px);
 }
 
 .music-card:focus-visible {
@@ -192,12 +191,6 @@
   display: flex;
   gap: 2px;
   transition: transform 0.25s ease;
-}
-
-.song-card-wrap:hover .card-actions,
-.song-card-wrap.menu-open .card-actions,
-.song-card-wrap:focus-within .card-actions {
-  transform: translateY(-2px);
 }
 
 .card-action {
@@ -279,7 +272,6 @@
 .song-card-wrap:hover .card-remove-button,
 .song-card-wrap:focus-within .card-remove-button {
   opacity: 1;
-  transform: translateY(-2px); /* lifts with the card */
 }
 
 .song-card-wrap .card-remove-button:hover,
@@ -323,10 +315,6 @@
   border-color: hsla(340, 70%, 75%, 0.45);
   color: var(--primary);
   outline: none;
-}
-
-.back-button:hover svg {
-  transform: translateX(-2px);
 }
 
 /* Genre, library and playlist page header: the same lit card as the tile on the home page */
@@ -449,7 +437,6 @@
 
 .play-all-button:hover,
 .play-all-button:focus-visible {
-  transform: translateY(-1px);
   background: hsl(330, 100%, 74%);
   box-shadow: 0 6px 18px rgba(255, 105, 180, 0.5);
   outline: none;
@@ -744,7 +731,6 @@
 
 .browse-tile:hover,
 .browse-tile:focus-visible {
-  transform: translateY(-2px);
   border-color: hsla(var(--tile-hue), 75%, 72%, 0.5);
   box-shadow: 0 10px 28px -10px hsla(var(--tile-hue), 85%, 60%, 0.55);
 }
@@ -804,14 +790,12 @@
 .browse-tile-chevron {
   font-size: 9px;
   opacity: 0;
-  transform: translateX(-4px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
 .browse-tile:hover .browse-tile-chevron,
 .browse-tile:focus-visible .browse-tile-chevron {
   opacity: 1;
-  transform: translateX(0);
 }
 
 /* Covers overlap in a fan in the top-right corner, and spread a little on hover */
@@ -839,11 +823,6 @@
 
 .browse-tile-cover:first-child {
   margin-left: 0;
-}
-
-.browse-tile:hover .browse-tile-cover,
-.browse-tile:focus-visible .browse-tile-cover {
-  transform: translateX(calc((var(--i) - (var(--n) - 1) / 2) * 6px)) translateY(-2px) rotate(calc(var(--spin) * 1.5));
 }
 
 /* The full-width Music Library tile: covers sit centred on the right, a little larger */
