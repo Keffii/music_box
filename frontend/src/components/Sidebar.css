@@ -143,7 +143,7 @@
 .section-header h3 {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted-foreground);
+  color: var(--primary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin: 0;
@@ -165,13 +165,13 @@
 
 /* The + button (an SVG icon, so the "i" rules above don't reach it) */
 .section-header .section-action {
-  color: var(--muted-foreground);
+  color: var(--primary);
   cursor: pointer;
-  transition: color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .section-header .section-action:hover {
-  color: var(--primary);
+  color: var(--foreground);
 }
 
 /* "No playlists yet": click to create one */
