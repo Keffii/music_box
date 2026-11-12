@@ -821,6 +821,12 @@
   transition: transform 0.35s ease;
 }
 
+/* On hover the cover stack fans out a little */
+.browse-tile:hover .browse-tile-cover,
+.browse-tile:focus-visible .browse-tile-cover {
+  transform: translateX(calc((var(--i) - (var(--n) - 1) / 2) * 6px)) translateY(-2px) rotate(calc(var(--spin) * 1.5));
+}
+
 .browse-tile-cover:first-child {
   margin-left: 0;
 }

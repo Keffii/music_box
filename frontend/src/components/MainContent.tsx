@@ -8,8 +8,6 @@ import { PageHero } from './PageHero';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faCompass, faMusic, faPen, faRecordVinyl, faListUl } from '@fortawesome/free-solid-svg-icons';
 import { faClock } from '@fortawesome/free-regular-svg-icons';
-import { useAuth } from '../context/AuthContext';
-import { displayName } from '../utils/guest';
 import { usePlaylists } from '../context/PlaylistContext';
 import { useToast } from '../context/ToastContext';
 import { GENRES, findGenre } from '../utils/genres';
@@ -29,7 +27,6 @@ const countLabel = (n: number) => `${n} song${n !== 1 ? 's' : ''}`;
 const pickCovers = (songs: Song[], max: number) => songs.filter(s => s.coverUrl).slice(0, max);
 
 const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
-  const { user } = useAuth();
   const { playlists, loading: playlistsLoading, renamePlaylist, refreshPlaylists } = usePlaylists();
   const { showToast } = useToast();
   const mainRef = useRef<HTMLDivElement>(null);
@@ -308,11 +305,6 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
   } else {
     content = (
       <>
-        <div className="greeting-section">
-          <h1>Hi, {displayName(user?.username)}</h1>
-          <p>Welcome! Here's what's playing.</p>
-        </div>
-
         <section className="content-section">
           <div className="section-title">
             <FontAwesomeIcon icon={faClock} />
