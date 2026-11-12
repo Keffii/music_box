@@ -285,7 +285,6 @@
 .song-card-wrap .card-remove-button:hover,
 .song-card-wrap .card-remove-button:focus-visible {
   background: hsl(0, 70%, 50%);
-  transform: translateY(-2px) scale(1.1);
   outline: none;
 }
 
