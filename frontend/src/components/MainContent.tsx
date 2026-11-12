@@ -319,7 +319,7 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
             <h2>Recently Played</h2>
           </div>
           {/* Always exactly one row of cards, so the sections below don't jump when the first song plays.
-              With no history yet, faint placeholder cards hold the space and the message sits on top. */}
+              With no history yet, invisible placeholder cards hold the space and the message sits on top. */}
           <div className="recent-row">
             <div className="card-grid card-grid--one-row">
               {recentlyPlayed.length > 0
@@ -337,7 +337,7 @@ const MainContent: React.FC<MainContentProps> = ({ route, navigate }) => {
                   ))}
             </div>
             {recentLoaded && recentlyPlayed.length === 0 && (
-              <p className="recent-empty-note">No recently played songs yet. Start playing to see your history!</p>
+              <p className="recent-empty-note">No recently played songs yet.</p>
             )}
           </div>
         </section>
