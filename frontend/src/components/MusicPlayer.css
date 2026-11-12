@@ -102,7 +102,6 @@
 
 .player-controls button:hover {
   color: var(--foreground);
-  transform: scale(1.05);
 }
 
 .player-controls button.active {
@@ -127,7 +126,6 @@
 
 .player-controls .play-button:hover {
   background-color: hsla(340, 70%, 80%, 1);
-  transform: scale(1.05);
 }
 
 /* Center the play/pause icon (FontAwesome SVG icons have built-in padding) */
@@ -300,9 +298,6 @@
   transition: transform 0.3s ease;
 }
 
-.grafana-link:hover .grafana-icon {
-  transform: scale(1.2);
-}
 
 /* Hidden audio element */
 audio {
@@ -340,9 +335,6 @@ input[type="range"] {
   transition: transform 0.15s ease;
 }
 
-.progress-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-}
 
 /* Chrome / Edge / Safari - Volume Slider */
 .volume-slider::-webkit-slider-runnable-track {
@@ -362,9 +354,6 @@ input[type="range"] {
   transition: transform 0.15s ease;
 }
 
-.volume-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-}
 
 /* Firefox - Progress Slider */
 .progress-slider::-moz-range-track {

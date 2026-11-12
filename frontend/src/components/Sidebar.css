@@ -172,7 +172,6 @@
 
 .section-header .section-action:hover {
   color: var(--primary);
-  transform: scale(1.1);
 }
 
 /* "No playlists yet": click to create one */
