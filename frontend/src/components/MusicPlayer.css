@@ -355,7 +355,12 @@ input[type="range"] {
   border-radius: 50%;       /* Keep circular */
   margin-top: -4px;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: background-color 0.15s ease;
+}
+
+/* The dot turns light while the pointer is over the volume bar */
+.volume-slider:hover::-webkit-slider-thumb {
+  background: var(--foreground);
 }
 
 
@@ -400,6 +405,11 @@ input[type="range"] {
   border-radius: 50%;       /* Keep circular */
   border: none;
   cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.volume-slider:hover::-moz-range-thumb {
+  background: var(--foreground);
 }
 
 .volume-slider::-moz-range-progress {
