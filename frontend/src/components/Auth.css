@@ -165,10 +165,6 @@
   box-shadow: 0 0 0 2px var(--primary);
 }
 
-.auth-back:hover svg {
-  transform: translateX(-2px);
-}
-
 /* "Back to Music Box" (a guest on the sign-in screen): in the page's top-left corner, outside the
    card, so the card keeps its size and position */
 .auth-back.auth-back--corner {
@@ -465,7 +461,6 @@
 }
 
 .auth-button:hover:not(:disabled) {
-  transform: translateY(-1px);
   filter: brightness(1.05);
   box-shadow: 0 10px 24px -8px hsla(330, 90%, 60%, 0.7);
 }
@@ -831,10 +826,5 @@
 @media (prefers-reduced-motion: reduce) {
   .auth-spinner {
     animation-duration: 2s;
-  }
-
-  .auth-button,
-  .auth-button:hover:not(:disabled) {
-    transform: none;
   }
 }

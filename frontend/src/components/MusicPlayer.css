@@ -219,7 +219,7 @@
   position: absolute;
   bottom: calc(100% + 12px);
   left: calc(6px + (100% - 12px) * var(--volume, 0) / 100);
-  transform: translateX(-50%) translateY(3px);
+  transform: translateX(-50%);
   padding: 3px 7px;
   border-radius: 6px;
   background: var(--popover, var(--card));
@@ -233,7 +233,7 @@
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 /* a small arrow pointing at the thumb */
@@ -252,7 +252,6 @@
 .volume-slider:focus-visible + .volume-tooltip,
 .volume-tooltip.visible {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
 }
 
 .player-volume-icon {
