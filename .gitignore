@@ -39,8 +39,11 @@ frontend/yarn-error.log*
 # Docker env
 .env.docker
 
-# Repository env (do not commit secrets)
+# Env files hold secrets: ignore every .env and .env.* anywhere, except the example templates
 .env
+.env.*
+!.env.example
+!.env.docker.example
 
 # Additional ignores
 # (kept in sync with project subfolders)
@@ -59,3 +62,8 @@ frontend/STRUCTURE.md
 upload/
 # Filled-in copies with real values (e.g. the database password)
 infra/aws/*.local.json
+
+# ESP32 firmware: sdkconfig holds the WiFi password and device key; build/ is generated
+esp32/build/
+esp32/sdkconfig
+esp32/sdkconfig.old
