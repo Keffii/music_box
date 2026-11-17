@@ -23,6 +23,20 @@
   <img alt="ESP32" src="https://img.shields.io/badge/ESP32-Bluetooth-E7352C?logo=espressif&logoColor=white">
 </p>
 
+## Contents
+- [Overview](#overview)
+- [Preview](#preview)
+- [Highlights](#highlights)
+- [Features](#features)
+- [Architecture](#architecture)
+- [ESP32 Bluetooth Remote](#esp32-bluetooth-remote)
+- [Database Schema](#database-schema)
+- [Security](#security)
+- [Monitoring](#monitoring)
+- [Running Locally](#running-locally)
+- [Music Credits](#music-credits)
+- [License](#license)
+
 ## Overview
 Music Box streams music from the cloud to the browser and lets you control playback from a
 handheld ESP32 remote. No account is needed: every visitor gets their own guest session and can
