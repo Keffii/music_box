@@ -62,6 +62,8 @@ frontend/STRUCTURE.md
 upload/
 # AWS setup templates, the guest sign-up Lambda and filled-in copies with real values (kept locally only)
 infra/aws/
+# Old ECS task definition from the earlier deployment (kept locally only)
+ecs-task-definition.json
 
 # ESP32 firmware: sdkconfig holds the WiFi password and device key; build/ is generated
 esp32/build/
