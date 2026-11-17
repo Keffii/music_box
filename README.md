@@ -18,13 +18,10 @@ No account needed: every visitor gets their own guest session and can start list
 Create an account (username or email) to keep your playlists and favourites. Your guest data moves
 over when you sign in.
 
-It runs on AWS: Amplify (React frontend), CloudFront and Elastic Beanstalk (Spring Boot API),
-RDS MySQL, S3 (music and covers) and Cognito (sign-in).
-
 ## Features
 - Cloud-based music streaming
 - Optional accounts: guest session per visitor, sign in with username or email
-- Separate player per user, kept in sync across your devices
+- Separate player per user, kept in sync across your devices if signed in
 - Playlists you can create, rename and trim, plus favourites
 - Pages with their own URLs and link previews
 - Media keys, keyboard shortcuts and a menu on every song
