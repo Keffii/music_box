@@ -30,8 +30,8 @@ for the step-by-step setup.
 - Pages with their own URLs and link previews
 - Media keys, keyboard shortcuts and a menu on every song
 - Works on desktop, tablet and phone
+- Real-time monitoring and analytics with Grafana
 - ESP32 Bluetooth physical controller integration
-- Optional Grafana analytics (local Docker setup)
 
 ## Preview
 <img src="https://github.com/user-attachments/assets/9fcbcc33-5b61-4bd5-86a5-4694c5369077" alt="Music Box application preview" width="100%"/>
@@ -48,6 +48,7 @@ The Music Box platform follows a microservices architecture deployed on AWS:
 - **Storage**: AWS S3 for music file storage
 - **Authentication**: AWS Cognito for secure user management
 - **CDN**: CloudFront in front of the API
+- **Monitoring**: Grafana (Cloud) for real-time analytics and metrics
 - **IoT Controller**: ESP32 microcontroller with Bluetooth connectivity
 
 ## Database Schema
@@ -83,7 +84,7 @@ Physical hardware controller for wireless music playback control:
 - Bluetooth Low Energy (BLE) communication
 
 ## Monitoring
-The local Docker Compose setup includes a Grafana dashboard with top 5 songs, last commands, command distribution and song count. The live AWS site doesn't run Grafana.
+The platform includes comprehensive monitoring and analytics powered by Grafana, providing real-time insights into top 5 songs, last commands, command distribution, and song count.
 
 ### Grafana Dashboard
 <img src="https://github.com/user-attachments/assets/4c54b681-7d9a-4d33-a0a5-873e218b46bb" alt="Grafana monitoring dashboard" width="100%"/>
@@ -92,6 +93,7 @@ The local Docker Compose setup includes a Grafana dashboard with top 5 songs, la
 - **Frontend**: React, TypeScript
 - **Backend**: Spring Boot
 - **Cloud**: AWS (Amplify, CloudFront, Elastic Beanstalk, RDS, S3, Cognito, Lambda)
+- **Monitoring**: Grafana Cloud
 - **Database**: MySQL (AWS RDS)
 - **IoT**: ESP32 microcontroller with Bluetooth
 - **Local development**: Docker Compose (frontend, backend, MySQL, Grafana)
