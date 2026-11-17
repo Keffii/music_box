@@ -33,6 +33,17 @@ RDS MySQL, S3 (music and covers) and Cognito (sign-in).
 - ESP32 Bluetooth physical controller integration
 
 ## Preview
+<table>
+  <tr>
+    <th>Desktop</th>
+    <th>Mobile</th>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/screenshots/desktop.png" alt="Music Box on desktop: home page with recently played songs, favourites and a playlist" width="100%"/></td>
+    <td valign="top" width="25%"><img src="docs/screenshots/mobile.png" alt="Music Box on a phone: home page with recently played songs and the player" width="100%"/></td>
+  </tr>
+</table>
+
 <img src="https://github.com/user-attachments/assets/9fcbcc33-5b61-4bd5-86a5-4694c5369077" alt="Music Box application preview" width="100%"/>
 
 ## System Architecture
