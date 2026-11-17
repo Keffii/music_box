@@ -64,6 +64,9 @@ upload/
 infra/aws/
 # Old ECS task definition from the earlier deployment (kept locally only)
 ecs-task-definition.json
+# Outdated sub-READMEs; the root README covers the project (kept locally only)
+frontend/README.md
+backend/README.md
 
 # ESP32 firmware: sdkconfig holds the WiFi password and device key; build/ is generated
 esp32/build/
