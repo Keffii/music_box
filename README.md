@@ -66,7 +66,7 @@ favorites, and your guest data moves over when you sign up.
 ## Architecture
 A single Spring Boot API serves the React frontend, backed by managed AWS services:
 
-<img width="551" alt="System architecture diagram" src="https://github.com/user-attachments/assets/f37ef939-1489-4e2e-bb2d-3df03fbf4195" />
+<img src="docs/architecture.svg" alt="System architecture: the browser loads the React app from Amplify, calls the Spring Boot API on Elastic Beanstalk through CloudFront, signs in with Cognito (with a Lambda trigger for guest accounts) and streams audio from S3. The API uses RDS MySQL, S3 and Cognito, Grafana reads analytics from RDS, and the ESP32 remote talks to the API over Bluetooth serial in the local setup." width="100%"/>
 
 | Layer | Technology |
 |---|---|
