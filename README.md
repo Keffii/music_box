@@ -14,7 +14,9 @@
 ## Website
 **Live: <https://musicbox.website>**
 
-Sign up with an email address to try it. Cognito emails you a confirmation code.
+No account needed: every visitor gets their own guest session and can start listening right away.
+Create an account (username or email) to keep your playlists and favourites. Your guest data moves
+over when you sign in.
 
 It runs on AWS: Amplify (React frontend), CloudFront and Elastic Beanstalk (Spring Boot API),
 RDS MySQL, S3 (music and covers) and Cognito (sign-in). See [docs/DEPLOY_AWS.md](docs/DEPLOY_AWS.md)
@@ -22,12 +24,14 @@ for the step-by-step setup.
 
 ## Features
 - Cloud-based music streaming
-- User authentication and registration
-- Real-time monitoring and analytics
-- Web interface with realtime updates
-- Scalable infrastructure
-- Containerized architecture with Docker for both frontend and backend
+- Optional accounts: guest session per visitor, sign in with username or email
+- Separate player per user, kept in sync across your devices
+- Playlists you can create, rename and trim, plus favourites
+- Pages with their own URLs and link previews
+- Media keys, keyboard shortcuts and a menu on every song
+- Works on desktop, tablet and phone
 - ESP32 Bluetooth physical controller integration
+- Optional Grafana analytics (local Docker setup)
 
 ## Preview
 <img src="https://github.com/user-attachments/assets/9fcbcc33-5b61-4bd5-86a5-4694c5369077" alt="Music Box application preview" width="100%"/>
@@ -43,7 +47,7 @@ The Music Box platform follows a microservices architecture deployed on AWS:
 - **Database**: MySQL on AWS RDS for persistent storage
 - **Storage**: AWS S3 for music file storage
 - **Authentication**: AWS Cognito for secure user management
-- **Monitoring**: Grafana (Cloud) for real-time analytics and metrics
+- **CDN**: CloudFront in front of the API
 - **IoT Controller**: ESP32 microcontroller with Bluetooth connectivity
 
 ## Database Schema
@@ -62,7 +66,7 @@ The application uses a relational database design to manage users, songs, playli
 ## Security
 - **Spring Security**: Backend authentication and authorization
 - **AWS Cognito**: Secure user identity management and JWT validation
-- **HTTPS/SSL**: Backend hosted on a domain with SSL certificate
+- **HTTPS**: Frontend and API served over HTTPS (Amplify and CloudFront)
 - **Environment Variables**: Sensitive configuration kept secure
 
 ## ESP32 Bluetooth Controller
@@ -79,19 +83,18 @@ Physical hardware controller for wireless music playback control:
 - Bluetooth Low Energy (BLE) communication
 
 ## Monitoring
-The platform includes comprehensive monitoring and analytics powered by Grafana, providing real-time insights into top 5 songs, last commands, command distribution, and song count.
+The local Docker Compose setup includes a Grafana dashboard with top 5 songs, last commands, command distribution and song count. The live AWS site doesn't run Grafana.
 
 ### Grafana Dashboard
 <img src="https://github.com/user-attachments/assets/4c54b681-7d9a-4d33-a0a5-873e218b46bb" alt="Grafana monitoring dashboard" width="100%"/>
 
 ## Tech Stack
-- **Frontend**: React, TypeScript (Dockerized)
-- **Backend**: Spring Boot (Dockerized)
-- **Cloud**: AWS (Amplify, Elastic Beanstalk, RDS, S3, Cognito)
-- **Monitoring**: Grafana Cloud
+- **Frontend**: React, TypeScript
+- **Backend**: Spring Boot
+- **Cloud**: AWS (Amplify, CloudFront, Elastic Beanstalk, RDS, S3, Cognito, Lambda)
 - **Database**: MySQL (AWS RDS)
 - **IoT**: ESP32 microcontroller with Bluetooth
-- **Containerization**: Docker
+- **Local development**: Docker Compose (frontend, backend, MySQL, Grafana)
 
 ## Installation
 ```bash
