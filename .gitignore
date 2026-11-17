@@ -8,7 +8,6 @@ backend/.settings/
 backend/bin/
 backend/out/
 backend/src/main/resources/application-local.properties
-backend/src/main/resources/application.properties
 backend/MIGRATION_GUIDE.md
 backend/SETUP_CHECKLIST.md
 backend/REACT_CONVERSION_SUMMARY.md
@@ -40,8 +39,11 @@ frontend/yarn-error.log*
 # Docker env
 .env.docker
 
-# Repository env (do not commit secrets)
+# Env files hold secrets: ignore every .env and .env.* anywhere, except the example templates
 .env
+.env.*
+!.env.example
+!.env.docker.example
 
 # Additional ignores
 # (kept in sync with project subfolders)
@@ -55,3 +57,21 @@ frontend/STRUCTURE.md
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+# Music files staged for upload to S3 (see docs/DEPLOY_AWS.md)
+upload/
+# AWS setup templates, the guest sign-up Lambda and filled-in copies with real values (kept locally only)
+infra/aws/
+# Old ECS task definition from the earlier deployment (kept locally only)
+ecs-task-definition.json
+# Outdated sub-READMEs; the root README covers the project (kept locally only)
+frontend/README.md
+backend/README.md
+
+# ESP32 firmware: sdkconfig holds the WiFi password and device key; build/ is generated
+esp32/build/
+esp32/sdkconfig
+esp32/sdkconfig.old
+
+# Private AWS deployment notes (kept locally only)
+docs/DEPLOY_AWS.md

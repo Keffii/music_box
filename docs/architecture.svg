@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="720" viewBox="0 0 1260 720" font-family="'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>Music Box system architecture</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/>
+    </marker>
+    <style>
+      .box { fill: #161b22; stroke: #30363d; stroke-width: 1.5; }
+      .title { fill: #f0f6fc; font-size: 16px; font-weight: 600; }
+      .sub { fill: #8b949e; font-size: 12.5px; }
+      .line { fill: none; stroke: #8b949e; stroke-width: 1.6; }
+      .dashed { stroke-dasharray: 6 5; }
+      .label { fill: #c9d1d9; font-size: 12px; }
+      .group { fill: none; stroke: #ED7100; stroke-width: 1.4; stroke-dasharray: 7 5; }
+      .group-label { fill: #ED7100; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; }
+    </style>
+  </defs>
+
+  <rect width="1260" height="720" rx="18" fill="#0d1117"/>
+
+  <!-- Connections (drawn first so boxes sit on top) -->
+  <path class="line" d="M150,195 V80 H356" marker-end="url(#arrow)"/>
+  <text class="label" x="162" y="70">Loads the app</text>
+
+  <path class="line" d="M264,240 H356" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text class="label" x="310" y="230" text-anchor="middle">REST · SSE</text>
+
+  <path class="line" d="M600,240 H716" marker-end="url(#arrow)"/>
+  <text class="label" x="658" y="230" text-anchor="middle">HTTPS + JWT</text>
+
+  <path class="line" d="M260,270 H320 V420 H356" marker-end="url(#arrow)"/>
+  <text class="label" x="312" y="352" text-anchor="end">Sign in</text>
+
+  <path class="line" d="M480,460 V556" marker-end="url(#arrow)"/>
+  <text class="label" x="490" y="512">Pre-sign-up trigger</text>
+
+  <path class="line" d="M770,290 V420 H604" marker-end="url(#arrow)"/>
+  <text class="label" x="687" y="410" text-anchor="middle">Verifies JWTs</text>
+
+  <path class="line" d="M920,235 H996" marker-end="url(#arrow)"/>
+  <text class="label" x="958" y="225" text-anchor="middle">JPA</text>
+
+  <path class="line" d="M920,270 H966 V420 H996" marker-end="url(#arrow)"/>
+  <text class="label" x="958" y="350" text-anchor="middle" transform="rotate(-90 958 350)">Track catalog</text>
+
+  <path class="line" d="M1110,200 V124" marker-end="url(#arrow)"/>
+  <text class="label" x="1120" y="166">Analytics data</text>
+
+  <path class="line" d="M150,285 V680 H1110 V464" marker-end="url(#arrow)"/>
+  <text class="label" x="640" y="670" text-anchor="middle">Streams audio and cover art from public URLs</text>
+
+  <path class="line dashed" d="M820,556 V294" marker-end="url(#arrow)"/>
+  <text class="label" x="832" y="440">Bluetooth serial (JSON)</text>
+  <text class="label" x="832" y="456" fill="#8b949e">local setup only</text>
+
+  <!-- Elastic Beanstalk group -->
+  <rect class="group" x="700" y="160" width="240" height="170" rx="12"/>
+  <text class="group-label" x="716" y="184">ELASTIC BEANSTALK · EC2</text>
+
+  <!-- Browser -->
+  <rect class="box" x="40" y="195" width="220" height="90" rx="10"/>
+  <rect x="40" y="195" width="6" height="90" rx="3" fill="#61DAFB"/>
+  <text class="title" x="62" y="233">Browser</text>
+  <text class="sub" x="62" y="256">React 19 · TypeScript</text>
+
+  <!-- Amplify -->
+  <rect class="box" x="360" y="40" width="240" height="80" rx="10"/>
+  <rect x="360" y="40" width="6" height="80" rx="3" fill="#DD344C"/>
+  <text class="title" x="382" y="74">AWS Amplify</text>
+  <text class="sub" x="382" y="97">Hosts the frontend</text>
+
+  <!-- CloudFront -->
+  <rect class="box" x="360" y="200" width="240" height="80" rx="10"/>
+  <rect x="360" y="200" width="6" height="80" rx="3" fill="#8C4FFF"/>
+  <text class="title" x="382" y="234">Amazon CloudFront</text>
+  <text class="sub" x="382" y="257">HTTPS entry point for the API</text>
+
+  <!-- Cognito -->
+  <rect class="box" x="360" y="380" width="240" height="80" rx="10"/>
+  <rect x="360" y="380" width="6" height="80" rx="3" fill="#DD344C"/>
+  <text class="title" x="382" y="414">Amazon Cognito</text>
+  <text class="sub" x="382" y="437">User pool · JWT sign-in</text>
+
+  <!-- Lambda -->
+  <rect class="box" x="360" y="560" width="240" height="80" rx="10"/>
+  <rect x="360" y="560" width="6" height="80" rx="3" fill="#ED7100"/>
+  <text class="title" x="382" y="594">AWS Lambda</text>
+  <text class="sub" x="382" y="617">Auto-confirms guest accounts</text>
+
+  <!-- Spring Boot API -->
+  <rect class="box" x="720" y="200" width="200" height="90" rx="10"/>
+  <rect x="720" y="200" width="6" height="90" rx="3" fill="#6DB33F"/>
+  <text class="title" x="742" y="236">Spring Boot API</text>
+  <text class="sub" x="742" y="259">Java 21 · REST · SSE</text>
+
+  <!-- ESP32 -->
+  <rect class="box" x="700" y="560" width="240" height="80" rx="10"/>
+  <rect x="700" y="560" width="6" height="80" rx="3" fill="#E7352C"/>
+  <text class="title" x="722" y="594">ESP32 remote</text>
+  <text class="sub" x="722" y="617">Play · skip · seek · volume</text>
+
+  <!-- Grafana -->
+  <rect class="box" x="1000" y="40" width="220" height="80" rx="10"/>
+  <rect x="1000" y="40" width="6" height="80" rx="3" fill="#F46800"/>
+  <text class="title" x="1022" y="74">Grafana Cloud</text>
+  <text class="sub" x="1022" y="97">Listening analytics</text>
+
+  <!-- RDS -->
+  <rect class="box" x="1000" y="200" width="220" height="80" rx="10"/>
+  <rect x="1000" y="200" width="6" height="80" rx="3" fill="#4D72F3"/>
+  <text class="title" x="1022" y="234">Amazon RDS</text>
+  <text class="sub" x="1022" y="257">MySQL 8</text>
+
+  <!-- S3 -->
+  <rect class="box" x="1000" y="380" width="220" height="80" rx="10"/>
+  <rect x="1000" y="380" width="6" height="80" rx="3" fill="#7AA116"/>
+  <text class="title" x="1022" y="414">Amazon S3</text>
+  <text class="sub" x="1022" y="437">Audio files · cover art</text>
+</svg>

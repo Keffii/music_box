@@ -20,9 +20,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Left and right share the space the controls don't need (equal, so play stays centred) */
+  flex: 1 1 0;
   min-width: 0;
-  flex: 0 0 300px;
-  width: 300px;
+  max-width: 300px;
 }
 
 .player-album-art {
@@ -71,8 +72,9 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  flex: 1;
-  max-width: 672px;
+  /* Always wide enough for all seven controls */
+  flex: 0 1 auto;
+  width: clamp(340px, 45%, 672px);
 }
 
 .player-controls {
@@ -100,7 +102,6 @@
 
 .player-controls button:hover {
   color: var(--foreground);
-  transform: scale(1.05);
 }
 
 .player-controls button.active {
@@ -125,7 +126,6 @@
 
 .player-controls .play-button:hover {
   background-color: hsla(340, 70%, 80%, 1);
-  transform: scale(1.05);
 }
 
 /* Center the play/pause icon (FontAwesome SVG icons have built-in padding) */
@@ -162,9 +162,40 @@
   align-items: center;
   gap: 12px;
   justify-content: flex-end;
-  flex: 0 0 300px;
-  width: 300px;
-} 
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 300px;
+}
+
+/* Opens the keyboard shortcuts list. Hidden on touch screens, which have no keyboard. */
+.player-shortcuts-button {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.player-shortcuts-button:hover,
+.player-shortcuts-button:focus-visible {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+@media (hover: none) {
+  .player-shortcuts-button {
+    display: none;
+  }
+}
 
 .player-volume-container {
   display: flex;
@@ -174,7 +205,60 @@
   max-width: 170px;
 }
 
+/* Holds the slider and the percentage above its thumb */
+.volume-slider-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* Over the thumb: the 12px thumb's centre runs from 6px to (width - 6px) */
+.volume-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: calc(6px + (100% - 12px) * var(--volume, 0) / 100);
+  transform: translateX(-50%);
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--popover, var(--card));
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* a small arrow pointing at the thumb */
+.volume-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--border);
+}
+
+.volume-slider:hover + .volume-tooltip,
+.volume-slider:active + .volume-tooltip,
+.volume-slider:focus-visible + .volume-tooltip,
+.volume-tooltip.visible {
+  opacity: 1;
+}
+
 .player-volume-icon {
+  background: none;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
   color: var(--muted-foreground);
   cursor: pointer;
   transition: color 0.2s ease;
@@ -213,9 +297,6 @@
   transition: transform 0.3s ease;
 }
 
-.grafana-link:hover .grafana-icon {
-  transform: scale(1.2);
-}
 
 /* Hidden audio element */
 audio {
@@ -250,12 +331,14 @@ input[type="range"] {
   border-radius: 50%;       /* Keep circular */
   margin-top: -4px;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
-.progress-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+/* The dot turns light while the pointer is over the seek bar */
+.progress-slider:hover::-webkit-slider-thumb {
+  background: var(--foreground);
 }
+
 
 /* Chrome / Edge / Safari - Volume Slider */
 .volume-slider::-webkit-slider-runnable-track {
@@ -272,12 +355,14 @@ input[type="range"] {
   border-radius: 50%;       /* Keep circular */
   margin-top: -4px;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
-.volume-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+/* The dot turns light while the pointer is over the volume bar */
+.volume-slider:hover::-webkit-slider-thumb {
+  background: var(--foreground);
 }
+
 
 /* Firefox - Progress Slider */
 .progress-slider::-moz-range-track {
@@ -293,6 +378,11 @@ input[type="range"] {
   border-radius: 50%;       /* Keep circular */
   border: none;
   cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.progress-slider:hover::-moz-range-thumb {
+  background: var(--foreground);
 }
 
 .progress-slider::-moz-range-progress {
@@ -315,6 +405,11 @@ input[type="range"] {
   border-radius: 50%;       /* Keep circular */
   border: none;
   cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.volume-slider:hover::-moz-range-thumb {
+  background: var(--foreground);
 }
 
 .volume-slider::-moz-range-progress {
@@ -373,4 +468,66 @@ input[type="range"] {
   background: var(--primary); /* Dot color */
   border-radius: 50%;       /* Keep circular */
   cursor: pointer;
+}
+/* ---------- Phones and tablets ---------- */
+
+/* The sidebar is a slide-in menu here, so the player spans the full width */
+@media (max-width: 1024px) {
+  .music-player {
+    left: 0;
+    padding: 0 16px;
+    gap: 16px;
+  }
+}
+
+/* Phones: song, controls and progress on three rows; volume uses the phone's buttons */
+@media (max-width: 640px) {
+  .music-player {
+    height: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    gap: 4px;
+  }
+
+  .player-left {
+    flex: 1 1 100%;
+    max-width: none;
+    gap: 10px;
+  }
+
+  .player-album-art {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+  }
+
+  .player-song-title {
+    font-size: 15px;
+  }
+
+  .player-song-artist {
+    margin-top: 0;
+    font-size: 12px;
+  }
+
+  .player-center {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .player-progress-container {
+    max-width: none;
+  }
+
+  .player-right {
+    display: none;
+  }
+}
+
+/* Very narrow phones (e.g. 320px): tighter spacing so all seven controls still fit */
+@media (max-width: 360px) {
+  .player-controls {
+    gap: 4px;
+  }
 }

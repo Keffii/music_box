@@ -1,6 +1,7 @@
 package com.example.media_controller_iot.controller;
 
 import com.example.media_controller_iot.service.PlayerService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -35,22 +36,29 @@ public class PlayerController {
     }
 
     @GetMapping("/state")
-    public @NonNull Map<String, Object> getState() {
-        return playerService.getState();
+    public @NonNull Map<String, Object> getState(Authentication authentication) {
+        return playerService.getState(getCurrentUserId(authentication));
     }
 
+    /** Live updates of the signed-in user's own player (requires the Authorization header). */
     @GetMapping("/stream")
-    public SseEmitter stream() {
+    public SseEmitter stream(HttpServletResponse response, Authentication authentication) {
+        // Stop nginx (Elastic Beanstalk) from buffering the stream, and any cache from storing it
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+
+        String userId = getCurrentUserId(authentication);
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
-        playerService.addEmitter(emitter);
+        playerService.addEmitter(userId, emitter);
 
         try {
-            emitter.send(playerService.getState());
+            emitter.send(playerService.getState(userId));
         } catch (Exception ignored) {
         }
 
-        emitter.onCompletion(() -> playerService.removeEmitter(emitter));
-        emitter.onTimeout(() -> playerService.removeEmitter(emitter));
+        emitter.onCompletion(() -> playerService.removeEmitter(userId, emitter));
+        emitter.onTimeout(() -> playerService.removeEmitter(userId, emitter));
+        emitter.onError(e -> playerService.removeEmitter(userId, emitter));
 
         return emitter;
     }

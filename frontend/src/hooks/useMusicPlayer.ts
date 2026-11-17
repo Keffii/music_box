@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Song, ServerState } from '../types/music.types';
-import { API_BASE } from '../utils/constants';
+import { API_BASE, DEFAULT_COVER } from '../utils/constants';
 import { loadSongs as fetchSongs } from '../services/playerService';
+import { authService } from '../services/authService';
 
 export const useMusicPlayer = () => {
   const [songs, setSongs] = useState<Song[]>([]);
@@ -15,37 +16,17 @@ export const useMusicPlayer = () => {
   const [repeatEnabled, setRepeatEnabled] = useState<boolean>(false);
   const [songTitle, setSongTitle] = useState<string>('Song Name');
   const [songArtist, setSongArtist] = useState<string>('Artist Name');
-  const [coverUrl, setCoverUrl] = useState<string>('/cover/better-day.png');
+  const [coverUrl, setCoverUrl] = useState<string>(DEFAULT_COVER);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const songsRef = useRef<Song[]>([]);
   const userIsAdjustingVolume = useRef<boolean>(false);
   const volumeUpdateTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastSongIdRef = useRef<number | null>(null);
-
-  // Load songs
-  const loadSongs = useCallback(async () => {
-    const data = await fetchSongs();
-    setSongs(data);
-    songsRef.current = data;
-    console.log('Songs loaded:', data);
-    
-    // Set the first song immediately on load
-    if (data && data.length > 0) {
-      const firstSong = data[0];
-      setCurrentSong(firstSong);
-      setSongTitle(firstSong.title || 'Song Name');
-      setSongArtist(firstSong.artist || 'Artist Name');
-      
-      // Set cover URL with backend base
-      if (firstSong.coverUrl) {
-        const fullCoverUrl = firstSong.coverUrl.startsWith('http') 
-          ? firstSong.coverUrl 
-          : `${API_BASE}${firstSong.coverUrl}`;
-        setCoverUrl(fullCoverUrl);
-      }
-    }
-  }, []);
+  const lastCommandSeqRef = useRef<number | null>(null);
+  // Latest state from the server. The first one usually arrives before the song list,
+  // so loadSongs() applies it again once the songs are known.
+  const lastServerStateRef = useRef<ServerState | null>(null);
 
   // Safe play function
   const safePlay = useCallback(() => {
@@ -56,8 +37,8 @@ export const useMusicPlayer = () => {
 
   // Update state from server
   const updateStateFromServer = useCallback((data: ServerState) => {
-    console.log('Server state update:', data);
-    
+    lastServerStateRef.current = data;
+
     setSongTitle(data.title);
     setSongArtist(data.artist);
     setShuffleEnabled(data.shuffle);
@@ -101,7 +82,7 @@ export const useMusicPlayer = () => {
           : `${API_BASE}${song.coverUrl}`;
         setCoverUrl(fullCoverUrl);
       } else {
-        setCoverUrl(`${API_BASE}/cover/better-day.jpg`);
+        setCoverUrl(DEFAULT_COVER);
       }
 
       // Update audio source if different
@@ -130,31 +111,109 @@ export const useMusicPlayer = () => {
       audioRef.current?.pause();
     }
 
-    // Handle seek forward from ESP32 controller
-    if (data.lastCommand === 'SEEK_FORWARD' && audioRef.current) {
-      audioRef.current.currentTime = Math.min(
-        audioRef.current.currentTime + 10,
-        audioRef.current.duration
-      );
+    // Handle seek forward from the ESP32 remote, only for a new command
+    // (not when the same state is replayed, e.g. after an SSE reconnect)
+    const isNewCommand = lastCommandSeqRef.current !== null && data.commandSeq !== lastCommandSeqRef.current;
+    lastCommandSeqRef.current = data.commandSeq ?? null;
+
+    // A new PLAY counts as a play even when the song stays the same (e.g. pressing Play on the song
+    // that's already loaded), so Recently Played refreshes then too, not only when the song changes
+    if (isNewCommand && data.lastCommand === 'PLAY') {
+      setTimeout(() => window.dispatchEvent(new CustomEvent('playHistoryChanged')), 0);
+    }
+    if (isNewCommand && data.lastCommand === 'SEEK_FORWARD' && audioRef.current) {
+      const target = audioRef.current.currentTime + 10;
+      audioRef.current.currentTime = Number.isFinite(audioRef.current.duration)
+        ? Math.min(target, audioRef.current.duration)
+        : target;
     }
   }, [safePlay]);
 
-  // SSE Connection
+  // Load songs, then show the server's current song (or the first one) with its audio
+  // loaded, so the player shows the song's length before anyone presses play
+  const loadSongs = useCallback(async () => {
+    const data = await fetchSongs();
+    setSongs(data);
+    songsRef.current = data;
+
+    if (lastServerStateRef.current) {
+      updateStateFromServer(lastServerStateRef.current);
+      return;
+    }
+    if (data && data.length > 0) {
+      const firstSong = data[0];
+      setCurrentSong(firstSong);
+      setSongTitle(firstSong.title || 'Song Name');
+      setSongArtist(firstSong.artist || 'Artist Name');
+      setCoverUrl(firstSong.coverUrl
+        ? (firstSong.coverUrl.startsWith('http') ? firstSong.coverUrl : `${API_BASE}${firstSong.coverUrl}`)
+        : DEFAULT_COVER);
+      if (audioRef.current && !audioRef.current.src && firstSong.srcUrl) {
+        // preload="metadata": fetches just enough to know the duration
+        audioRef.current.src = firstSong.srcUrl.startsWith('http') ? firstSong.srcUrl : `${API_BASE}${firstSong.srcUrl}`;
+      }
+    }
+  }, [updateStateFromServer]);
+
+  // Live updates of this user's player (Server-Sent Events). Read with fetch() rather than
+  // EventSource, because the stream is per user and needs the Authorization header.
+  // Reconnects after 2 s, with a fresh token each time. Returns a function that stops it.
   const connectSSE = useCallback(() => {
-    const eventSource = new EventSource(`${API_BASE}/api/player/stream`);
+    let stopped = false;
+    let controller: AbortController | null = null;
 
-    eventSource.onmessage = (event: MessageEvent) => {
-      const data: ServerState = JSON.parse(event.data);
-      updateStateFromServer(data);
+    const handleEvent = (block: string) => {
+      const data = block
+        .split('\n')
+        .filter(line => line.startsWith('data:'))
+        .map(line => line.slice(5).replace(/^ /, ''))
+        .join('\n');
+      if (!data) return; // e.g. the ":ping" heartbeat
+      try {
+        updateStateFromServer(JSON.parse(data) as ServerState);
+      } catch (e) {
+        console.warn('Ignoring a malformed player update', e);
+      }
     };
 
-    eventSource.onerror = () => {
-      console.warn('SSE connection lost – reconnecting...');
-      eventSource.close();
-      setTimeout(connectSSE, 2000);
+    const run = async () => {
+      while (!stopped) {
+        controller = new AbortController();
+        try {
+          const token = await authService.getAccessToken();
+          const res = await fetch(`${API_BASE}/api/player/stream`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            cache: 'no-store',
+            signal: controller.signal,
+          });
+          if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer = (buffer + decoder.decode(value, { stream: true })).replace(/\r\n/g, '\n');
+            let end;
+            while ((end = buffer.indexOf('\n\n')) >= 0) {
+              handleEvent(buffer.slice(0, end));
+              buffer = buffer.slice(end + 2);
+            }
+          }
+        } catch (e) {
+          if (stopped) return;
+          console.warn('Player stream lost, reconnecting...', e);
+        }
+        if (!stopped) await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     };
 
-    return () => eventSource.close();
+    run();
+    return () => {
+      stopped = true;
+      controller?.abort();
+    };
   }, [updateStateFromServer]);
 
   // Update songsRef when songs change

@@ -7,6 +7,35 @@
   border-right: 1px solid var(--sidebar-border);
   color: var(--sidebar-foreground);
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Phones and tablets: the sidebar slides in from the left, over the page and the player */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 85vw);
+    z-index: 1100;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ".sidebar" prefix: these must beat the base rules further down this file */
+  .sidebar .sidebar-header {
+    padding: 16px 20px;
+  }
+
+  .sidebar .sidebar-logo {
+    height: 48px;
+  }
 }
 
 .sidebar-header {
@@ -64,6 +93,15 @@
   color: var(--primary);
 }
 
+/* The playlist that is open in the main view */
+.playlist-item.active {
+  background-color: var(--sidebar-accent);
+}
+
+.playlist-item.active .playlist-name {
+  color: var(--primary);
+}
+
 .nav-item i {
   font-size: 20px;
   width: 20px;
@@ -73,9 +111,20 @@
   justify-content: center;
 }
 
+/* Playlists and Favorites share the height left between the nav and the footer.
+   Each list scrolls, so opening the "Playlist name" field or adding many items
+   never pushes the footer (Sign Out) out of view. */
 .sidebar-section {
   margin-bottom: 16px;
   padding: 0 12px;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header,
+.sidebar-nav {
   flex-shrink: 0;
 }
 
@@ -94,7 +143,7 @@
 .section-header h3 {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted-foreground);
+  color: var(--primary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin: 0;
@@ -114,6 +163,29 @@
   color: var(--primary);
 }
 
+/* The + button (an SVG icon, so the "i" rules above don't reach it) */
+.section-header .section-action {
+  color: var(--primary);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.section-header .section-action:hover {
+  color: var(--foreground);
+}
+
+/* "No playlists yet": click to create one */
+.playlist-item.playlist-empty {
+  opacity: 0.5;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.playlist-item.playlist-empty:hover,
+.playlist-item.playlist-empty:focus-visible {
+  opacity: 0.85;
+  outline: none;
+}
+
 .playlist-list {
   list-style: none;
   padding: 0;
@@ -121,7 +193,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  height: 240px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -132,7 +205,8 @@
   display: flex;
   flex-direction: column;
   gap: 0px;
-  height: 250px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -145,7 +219,7 @@
   padding: 4px 4px;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease;
   background: transparent;
   min-height: 47px;
   max-height: 47px;
@@ -238,9 +312,16 @@
 }
 
 /* User Profile Section (Bottom) */
+/* Same height as the player bar (MusicPlayer.css), so their top borders line up */
 .sidebar-footer {
   margin-top: auto;
-  padding: 1rem;
+  height: 120px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 1rem;
   border-top: 1px solid var(--sidebar-border);
 }
 
@@ -248,15 +329,15 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem;
+  padding: 0.5rem 0.75rem;
   margin-bottom: 0.5rem;
   background: var(--sidebar-accent);
   border-radius: 8px;
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--primary), var(--accent));
   display: flex;
@@ -283,7 +364,7 @@
 
 .sign-out-button {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -305,5 +386,77 @@
 
 .sign-out-button i {
   font-size: 1rem;
+}
+
+.user-info {
+  min-width: 0;
+}
+
+/* Guests: one card with why to make an account and the two buttons, inside the 120px footer */
+.guest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sidebar-accent);
+}
+
+.guest-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guest-card-text strong {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--sidebar-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guest-card-text span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+
+.guest-card-text span svg {
+  font-size: 0.65rem;
+}
+
+.guest-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.guest-actions .sign-out-button {
+  flex: 1;
+  height: 30px;
+  padding: 0 8px;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.guest-actions .sign-out-button.guest-create {
+  flex: 1.4;
+}
+
+.sign-out-button.guest-create {
+  border-color: transparent;
+  background: hotpink;
+  color: white;
+  font-weight: 600;
+}
+
+.sign-out-button.guest-create:hover {
+  background: hsl(330, 100%, 74%);
+  border-color: transparent;
+  color: white;
 }
 

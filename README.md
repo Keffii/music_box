@@ -8,130 +8,148 @@
 </p>
 <h1 align="center">Music Box</h1>
 <p align="center">
-  <strong>A cloud-based music streaming service with a physical bluetooth remote for playback and volume control.</strong>
+  <strong>A cloud-based music streaming service with a physical Bluetooth remote for playback and volume control.</strong>
+</p>
+<p align="center">
+  <a href="https://musicbox.website"><strong>Try it live → musicbox.website</strong></a>
+</p>
+<p align="center">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white">
+  <img alt="Spring Boot 3.5" src="https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?logo=springboot&logoColor=white">
+  <img alt="Java 21" src="https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white">
+  <img alt="MySQL" src="https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white">
+  <img alt="AWS" src="https://img.shields.io/badge/AWS-232F3E?logo=amazonwebservices&logoColor=white">
+  <img alt="ESP32" src="https://img.shields.io/badge/ESP32-Bluetooth-E7352C?logo=espressif&logoColor=white">
 </p>
 
-## Website
-Not available anymore due to AWS tokens.
-
-## Features
-- Cloud-based music streaming
-- User authentication and registration
-- Real-time monitoring and analytics
-- Web interface with realtime updates
-- Scalable infrastructure
-- Containerized architecture with Docker for both frontend and backend
-- ESP32 Bluetooth physical controller integration
+## Overview
+Music Box streams music from the cloud to the browser and lets you control playback from a
+handheld ESP32 remote. No account is needed: every visitor gets their own guest session and can
+start listening right away. Creating an account (username or email) keeps your playlists and
+favorites, and your guest data moves over when you sign up.
 
 ## Preview
-<img src="https://github.com/user-attachments/assets/9fcbcc33-5b61-4bd5-86a5-4694c5369077" alt="Music Box application preview" width="100%"/>
+<table>
+  <tr>
+    <th>Desktop</th>
+    <th>Mobile</th>
+  </tr>
+  <tr>
+    <td valign="top"><img src="docs/screenshots/desktop.png" alt="Music Box on desktop: home page with recently played songs, favorites and a playlist" width="100%"/></td>
+    <td valign="top" width="25%"><img src="docs/screenshots/mobile.png" alt="Music Box on a phone: home page with recently played songs and the player" width="100%"/></td>
+  </tr>
+</table>
 
-## System Architecture
-The Music Box platform follows a microservices architecture deployed on AWS:
+## Highlights
+- **Live updates with Server-Sent Events.** Player state and playlist changes are pushed from the
+  API to every open tab and device, with no polling.
+- **Guest sessions without sign-up friction.** A Cognito pre-sign-up Lambda confirms throwaway
+  guest accounts, and an API endpoint moves a guest's playlists and favorites to their new account.
+- **A player per user.** Each user has their own queue, track and volume, kept in sync across
+  their signed-in devices.
+- **Tuned for small instances.** Turning off Spring's open-in-view stopped long-lived audio streams
+  from each holding a database connection, which had exhausted the connection pool at about
+  ten concurrent listeners.
+- **Hardware control.** An ESP32 remote sends play, pause, skip, seek and volume commands to the
+  backend over Bluetooth serial.
 
-<img width="551" alt="System Architecture Diagram" src="https://github.com/user-attachments/assets/f37ef939-1489-4e2e-bb2d-3df03fbf4195" />
+## Features
+- Optional accounts: a guest session per visitor, or sign in with username or email
+- Playlists you can create, rename and trim, plus favorites and recently played
+- Pages with their own URLs and link previews
+- Media keys, keyboard shortcuts and a menu on every song
+- Responsive layout for desktop, tablet and phone
+- Listening analytics in Grafana
+- ESP32 Bluetooth remote
 
-**Architecture Components:**
-- **Frontend**: React application hosted on AWS Amplify
-- **Backend**: Spring Boot REST API deployed on Elastic Beanstalk
-- **Database**: MySQL on AWS RDS for persistent storage
-- **Storage**: AWS S3 for music file storage
-- **Authentication**: AWS Cognito for secure user management
-- **Monitoring**: Grafana (Cloud) for real-time analytics and metrics
-- **IoT Controller**: ESP32 microcontroller with Bluetooth connectivity
+## Architecture
+A single Spring Boot API serves the React frontend, backed by managed AWS services:
+
+<img src="docs/architecture.svg" alt="System architecture: the browser loads the React app from Amplify, calls the Spring Boot API on Elastic Beanstalk through CloudFront, signs in with Cognito (with a Lambda trigger for guest accounts) and streams audio from S3. The API uses RDS MySQL, S3 and Cognito, Grafana reads analytics from RDS, and the ESP32 remote talks to the API over Bluetooth serial in the local setup." width="100%"/>
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19 and TypeScript, hosted on AWS Amplify |
+| API | Spring Boot 3.5 (Java 21) on Elastic Beanstalk, behind CloudFront |
+| Database | MySQL 8 on Amazon RDS, accessed through Spring Data JPA |
+| Media storage | Amazon S3 for audio files and cover art |
+| Authentication | Amazon Cognito (JWT), with a Lambda trigger for guest accounts |
+| Live updates | Server-Sent Events |
+| Analytics | Grafana Cloud |
+| Hardware | ESP32 microcontroller over Bluetooth serial |
+
+## ESP32 Bluetooth Remote
+A handheld controller for playback and volume:
+
+<img width="695" alt="ESP32 controller diagram" src="https://github.com/user-attachments/assets/f7d478de-0e7f-420b-b9a4-987a25af09f8" />
+
+- Play and pause
+- Next and previous track
+- Volume with a rotary encoder, plus mute
+- Seek forward 10 seconds
+- Sends JSON commands over Bluetooth serial to the backend running on the paired computer
 
 ## Database Schema
-The application uses a relational database design to manage users, songs, playlists, and analytics:
+<img width="1539" alt="Database ER diagram" src="https://github.com/user-attachments/assets/bbe7cc1b-f81e-4a0e-93bc-e209d112d77e" />
 
-<img width="1539" alt="Database ER Diagram" src="https://github.com/user-attachments/assets/bbe7cc1b-f81e-4a0e-93bc-e209d112d77e" />
-
-**Key Entities:**
-- **Users**: Managed through AWS Cognito
-- **Songs**: Metadata stored in MySQL, files in S3
-- **Playlists**: User-created collections with many-to-many relationships
-- **Favorites**: User's liked songs
-- **Command Log**: Analytics tracking for user interactions
-- **Volume Log**: Historical volume adjustment data
+- **Users:** managed by Amazon Cognito and referenced by their Cognito ID
+- **Songs:** metadata in MySQL, audio and covers in S3
+- **Playlists:** user-created, with a many-to-many link to songs
+- **Favorites:** each user's liked songs
+- **Command log and volume log:** playback and volume history for analytics
 
 ## Security
-- **Spring Security**: Backend authentication and authorization
-- **AWS Cognito**: Secure user identity management and JWT validation
-- **HTTPS/SSL**: Backend hosted on a domain with SSL certificate
-- **Environment Variables**: Sensitive configuration kept secure
-
-## ESP32 Bluetooth Controller
-Physical hardware controller for wireless music playback control:
-
-<img width="695" alt="ESP32 Controller Diagram" src="https://github.com/user-attachments/assets/f7d478de-0e7f-420b-b9a4-987a25af09f8" />
-
-**Features:**
-- Play/Pause control
-- Next/Previous track navigation
-- Volume adjustment with rotary encoder
-- Seek (+10s skip)
-- Mute functionality
-- Bluetooth Low Energy (BLE) communication
+- Every API request apart from health checks needs a Cognito JWT, verified by Spring Security
+- Frontend and API are served over HTTPS (Amplify and CloudFront)
+- Secrets live in environment variables, never in the repository
 
 ## Monitoring
-The platform includes comprehensive monitoring and analytics powered by Grafana, providing real-time insights into top 5 songs, last commands, command distribution, and song count.
+A Grafana dashboard shows the top 5 songs, the latest commands, command distribution and song count.
 
-### Grafana Dashboard
 <img src="https://github.com/user-attachments/assets/4c54b681-7d9a-4d33-a0a5-873e218b46bb" alt="Grafana monitoring dashboard" width="100%"/>
 
-## Tech Stack
-- **Frontend**: React, TypeScript (Dockerized)
-- **Backend**: Spring Boot (Dockerized)
-- **Cloud**: AWS (Amplify, Elastic Beanstalk, RDS, S3, Cognito)
-- **Monitoring**: Grafana Cloud
-- **Database**: MySQL (AWS RDS)
-- **IoT**: ESP32 microcontroller with Bluetooth
-- **Containerization**: Docker
+## Running Locally
+**Prerequisites:** Java 21, Node.js 20+, Docker, and your own Amazon Cognito user pool and S3 bucket.
 
-## Installation
 ```bash
-# Clone the repository
 git clone https://github.com/Keffii/music_box.git
-
-# Enter the correct repo folder
 cd music_box
 
-# Option A: Run with Docker Compose (from repo root)
-docker-compose up -d
+# 1. Start MySQL (listens on localhost:3307)
+docker compose up -d db
+```
 
-# Option B: Run services locally
-# Start backend (new terminal recommended)
+```bash
+# 2. Start the API on http://localhost:8080 (new terminal, from the repo root)
 cd backend
+export SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3307/wireless_music_player_db"
+export SPRING_DATASOURCE_USERNAME=admin
+export SPRING_DATASOURCE_PASSWORD=password
+export AWS_S3_BUCKET=your-bucket
+export AWS_COGNITO_USER_POOL_ID=your-user-pool-id
+export AWS_COGNITO_APP_CLIENT_ID=your-app-client-id
+export SERIAL_ENABLED=false   # true only with the ESP32 paired to this computer
 ./mvnw spring-boot:run
+```
 
-# Start frontend (new terminal)
-cd ../frontend
+```bash
+# 3. Start the frontend on http://localhost:8001 (new terminal, from the repo root)
+cd frontend
+cp .env.example .env          # then fill in your Cognito IDs
 npm install
 npm start
 ```
 
-## Music Tracklist
-All music used is royalty-free from Pixabay:
+## Music Credits
+All music is royalty-free from Pixabay.
 
-**Electronic:**
-- [Better Day](https://pixabay.com/music/beats-better-day-186374/)
-- [Abstract Beauty](https://pixabay.com/music/upbeat-abstract-beauty-378257/)
-- [Cascade Breathe](https://pixabay.com/music/beats-cascade-breathe-future-garage-412839/)
-- [Running Night](https://pixabay.com/music/funk-running-night-393139/)
+| Genre | Tracks |
+|---|---|
+| Electronic | [Better Day](https://pixabay.com/music/beats-better-day-186374/), [Abstract Beauty](https://pixabay.com/music/upbeat-abstract-beauty-378257/), [Cascade Breathe](https://pixabay.com/music/beats-cascade-breathe-future-garage-412839/), [Running Night](https://pixabay.com/music/funk-running-night-393139/) |
+| Lofi | [Coffee Lofi](https://pixabay.com/music/lofi-coffee-lofi-lofi-music-chill-ambient-458900/), [Good Night Lofi](https://pixabay.com/music/beats-good-night-lofi-cozy-chill-music-160166/), [Lofi Study](https://pixabay.com/music/beats-lofi-study-calm-peaceful-chill-hop-112191/), [Lofi Chill](https://pixabay.com/music/lofi-lofi-lofi-chill-lofi-girl-456265/) |
+| Hip-Hop | [Hype Drill Music](https://pixabay.com/music/trap-hype-drill-music-438398/), [Lonewolf Dark Trap](https://pixabay.com/music/trap-lonewolf-dark-hard-sad-trap-beat-prod-by-onesevenbeatxs-156895/), [Hip Hop Beat](https://pixabay.com/music/beats-hiphop-427992/), [Energetic Hip Hop](https://pixabay.com/music/beats-energetic-hip-hop-8303/) |
+| Trance | [Trance Dance Club](https://pixabay.com/music/upbeat-trance-dance-club-music-409571/), [Trance](https://pixabay.com/music/techno-trance-trance-123192/), [Smart Factory](https://pixabay.com/music/dance-trance-137032/), [Pure Trance](https://pixabay.com/music/electro-pure-trance-459528/) |
 
-**Lofi:**
-- [Coffee Lofi](https://pixabay.com/music/lofi-coffee-lofi-lofi-music-chill-ambient-458900/)
-- [Good Night Lofi](https://pixabay.com/music/beats-good-night-lofi-cozy-chill-music-160166/)
-- [Lofi Study](https://pixabay.com/music/beats-lofi-study-calm-peaceful-chill-hop-112191/)
-- [Lofi Chill](https://pixabay.com/music/lofi-lofi-lofi-chill-lofi-girl-456265/)
-
-**Hip Hop:**
-- [Hype Drill Music](https://pixabay.com/music/trap-hype-drill-music-438398/)
-- [Lonewolf Dark Trap](https://pixabay.com/music/trap-lonewolf-dark-hard-sad-trap-beat-prod-by-onesevenbeatxs-156895/)
-- [Hip Hop Beat](https://pixabay.com/music/beats-hiphop-427992/)
-- [Energetic Hip Hop](https://pixabay.com/music/beats-energetic-hip-hop-8303/)
-
-**Trance:**
-- [Trance Dance Club](https://pixabay.com/music/upbeat-trance-dance-club-music-409571/)
-- [Trance 123192](https://pixabay.com/music/techno-trance-trance-123192/)
-- [Dance Trance](https://pixabay.com/music/dance-trance-137032/)
-- [Pure Trance](https://pixabay.com/music/electro-pure-trance-459528/)
+## License
+[MIT](LICENSE)

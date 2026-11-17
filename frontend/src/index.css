@@ -51,6 +51,7 @@ code {
 
 #root {
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -71,4 +72,15 @@ code {
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsla(340, 70%, 75%, 0.7);
+}
+
+/* Dark "play" overlay on song covers: fades in and out instead of popping */
+.hover-overlay {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.hover-overlay.visible {
+  opacity: 1;
 }

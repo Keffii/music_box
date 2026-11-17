@@ -3,6 +3,7 @@ package com.example.media_controller_iot.repository;
 import com.example.media_controller_iot.models.PlayerCommandLog;
 import com.example.media_controller_iot.models.Songs;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -21,4 +22,9 @@ public interface PlayerCommandLogRepo extends JpaRepository<PlayerCommandLog, Lo
            "                   AND c2.command IN ('PLAY', 'NEXT', 'PREV')) " +
            "ORDER BY c.timestamp DESC")
     List<Songs> findRecentlyPlayedSongsByUserId(@Param("userId") String userId);
+
+    /** Moves one user's play history to another (a guest's history to their new account) */
+    @Modifying
+    @Query("UPDATE PlayerCommandLog c SET c.userId = :toUserId WHERE c.userId = :fromUserId")
+    int reassignUser(@Param("fromUserId") String fromUserId, @Param("toUserId") String toUserId);
 }

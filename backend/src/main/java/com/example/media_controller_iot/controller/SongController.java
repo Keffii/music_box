@@ -36,7 +36,7 @@ public class SongController {
         if (query == null || query.trim().isEmpty()) {
             return List.of();
         }
-        return songRepository.searchByTitleOrArtist(query.trim());
+        return songRepository.searchByTitleArtistOrCategory(query.trim());
     }
 
     @GetMapping("/recently-played")
