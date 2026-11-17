@@ -19,8 +19,7 @@ Create an account (username or email) to keep your playlists and favourites. You
 over when you sign in.
 
 It runs on AWS: Amplify (React frontend), CloudFront and Elastic Beanstalk (Spring Boot API),
-RDS MySQL, S3 (music and covers) and Cognito (sign-in). See [docs/DEPLOY_AWS.md](docs/DEPLOY_AWS.md)
-for the step-by-step setup.
+RDS MySQL, S3 (music and covers) and Cognito (sign-in).
 
 ## Features
 - Cloud-based music streaming
