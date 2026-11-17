@@ -19,7 +19,7 @@
   <img alt="Spring Boot 3.5" src="https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?logo=springboot&logoColor=white">
   <img alt="Java 21" src="https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white">
   <img alt="MySQL" src="https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white">
-  <img alt="AWS" src="https://img.shields.io/badge/AWS-Amplify_·_Elastic_Beanstalk_·_RDS_·_S3_·_Cognito-232F3E?logo=amazonwebservices&logoColor=white">
+  <img alt="AWS" src="https://img.shields.io/badge/AWS-232F3E?logo=amazonwebservices&logoColor=white">
   <img alt="ESP32" src="https://img.shields.io/badge/ESP32-Bluetooth-E7352C?logo=espressif&logoColor=white">
 </p>
 
@@ -121,7 +121,7 @@ docker compose up -d db
 ```
 
 ```bash
-# 2. Start the API on http://localhost:8080
+# 2. Start the API on http://localhost:8080 (new terminal, from the repo root)
 cd backend
 export SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3307/wireless_music_player_db"
 export SPRING_DATASOURCE_USERNAME=admin
@@ -134,7 +134,7 @@ export SERIAL_ENABLED=false   # true only with the ESP32 paired to this computer
 ```
 
 ```bash
-# 3. Start the frontend on http://localhost:8001
+# 3. Start the frontend on http://localhost:8001 (new terminal, from the repo root)
 cd frontend
 cp .env.example .env          # then fill in your Cognito IDs
 npm install
