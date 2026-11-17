@@ -44,8 +44,6 @@ RDS MySQL, S3 (music and covers) and Cognito (sign-in).
   </tr>
 </table>
 
-<img src="https://github.com/user-attachments/assets/9fcbcc33-5b61-4bd5-86a5-4694c5369077" alt="Music Box application preview" width="100%"/>
-
 ## System Architecture
 The Music Box platform follows a microservices architecture deployed on AWS:
 
