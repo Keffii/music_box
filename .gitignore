@@ -60,8 +60,8 @@ frontend/STRUCTURE.md
 
 # Music files staged for upload to S3 (see docs/DEPLOY_AWS.md)
 upload/
-# Filled-in copies with real values (e.g. the database password)
-infra/aws/*.local.json
+# AWS setup templates, the guest sign-up Lambda and filled-in copies with real values (kept locally only)
+infra/aws/
 
 # ESP32 firmware: sdkconfig holds the WiFi password and device key; build/ is generated
 esp32/build/
