@@ -116,7 +116,6 @@ A handheld controller for playback and volume:
 ## Security
 - Every API request apart from health checks needs a Cognito JWT, verified by Spring Security
 - Frontend and API are served over HTTPS (Amplify and CloudFront)
-- Secrets live in environment variables, never in the repository
 
 ## Monitoring
 A Grafana dashboard shows the top 5 songs, the latest commands, command distribution and song count.
