@@ -1,0 +1,115 @@
+menu "Music Box remote"
+
+    menu "Network"
+        config MUSICBOX_WIFI_SSID
+            string "WiFi SSID"
+            default "my-wifi"
+            help
+                Name of the 2.4 GHz WiFi network (the ESP32 has no 5 GHz radio).
+
+        config MUSICBOX_WIFI_PASSWORD
+            string "WiFi password"
+            default "my-password"
+
+        config MUSICBOX_SERVER_URL
+            string "Music Box URL"
+            default "http://192.168.1.100:8080"
+            help
+                Base URL of the web player, as seen from the ESP32: the LAN IP of the computer
+                running docker compose plus WEB_PORT (default 8080). No trailing slash.
+
+        config MUSICBOX_DEVICE_KEY
+            string "Device key"
+            default "musicbox-demo-key"
+            help
+                Sent in the X-Device-Key header. It must match DEVICE_KEY on the backend.
+
+        config MUSICBOX_POLL_MS
+            int "Now-playing poll interval (ms)"
+            range 200 5000
+            default 500
+    endmenu
+
+    menu "Buttons and knob"
+        config MUSICBOX_PIN_PLAY_PAUSE
+            int "Play/Pause button GPIO"
+            default 26
+        config MUSICBOX_PIN_NEXT
+            int "Next button GPIO"
+            default 25
+            help
+                A short press skips the song; holding it jumps forward 10 s, again every 0.5 s
+                while held.
+        config MUSICBOX_PIN_PREV
+            int "Previous button GPIO"
+            default 33
+        config MUSICBOX_PIN_SEEK
+            int "Seek +10 s button GPIO (-1: none, hold Next instead)"
+            default 27
+        config MUSICBOX_PIN_SHUFFLE
+            int "Shuffle button GPIO (-1: none)"
+            default 32
+        config MUSICBOX_PIN_REPEAT
+            int "Repeat button GPIO (-1: none)"
+            default 4
+            help
+                GPIO 34-39 have no internal pull-up: a button there also needs a 10 kOhm resistor
+                from the pin to 3V3.
+        config MUSICBOX_PIN_KNOB
+            int "Volume potentiometer GPIO (ADC1 pin: 32-39)"
+            default 34
+        config MUSICBOX_KNOB_INVERT
+            bool "Invert knob direction"
+            default n
+            help
+                Turn on if turning the knob clockwise lowers the volume.
+    endmenu
+
+    menu "OLED (SSD1351, 128x96)"
+        config MUSICBOX_PIN_OLED_CLK
+            int "CLK GPIO"
+            default 18
+        config MUSICBOX_PIN_OLED_DIN
+            int "DIN (MOSI) GPIO"
+            default 23
+        config MUSICBOX_PIN_OLED_CS
+            int "CS GPIO"
+            default 5
+        config MUSICBOX_PIN_OLED_DC
+            int "DC GPIO"
+            default 16
+        config MUSICBOX_PIN_OLED_RST
+            int "RES GPIO (-1: wired to EN)"
+            default 17
+            help
+                -1 frees a GPIO: wire the display's RST to the board's EN pin instead, so it resets
+                together with the ESP32.
+        config MUSICBOX_OLED_SPI_MHZ
+            int "SPI clock (MHz)"
+            range 1 20
+            default 16
+        config MUSICBOX_OLED_BRIGHTNESS
+            int "Brightness (1-16)"
+            range 1 16
+            default 16
+            help
+                The display's master contrast, in 16 steps (16 = full). Lower it when filming the
+                remote: a dimmer screen lets the camera use a longer exposure, which smooths out
+                the flicker between the display's refresh and the camera, without blowing out
+                the screen. 8 is half as bright.
+        config MUSICBOX_OLED_CLOCK
+            int "Display clock (SSD1351 command B3, 0-255)"
+            range 0 255
+            default 241
+            help
+                The display's oscillator (high 4 bits) and clock divider (low 4 bits), which set
+                its refresh rate. The default 241 (0xF1) is the fastest oscillator divided by 2.
+                When filming, the refresh can beat against the camera's shutter and show as a
+                band rolling through the screen; another value can make the refresh fit the
+                camera's exposure evenly.
+        config MUSICBOX_OLED_ROTATE_180
+            bool "Rotate the display 180 degrees"
+            default n
+    endmenu
+
+endmenu
