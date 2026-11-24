@@ -20,9 +20,10 @@ menu "Music Box remote"
 
         config MUSICBOX_DEVICE_KEY
             string "Device key"
-            default "musicbox-demo-key"
+            default ""
             help
                 Sent in the X-Device-Key header. It must match DEVICE_KEY on the backend.
+                Empty by default: choose your own key and set the same one on the backend.
 
         config MUSICBOX_POLL_MS
             int "Now-playing poll interval (ms)"

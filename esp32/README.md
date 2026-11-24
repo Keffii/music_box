@@ -87,7 +87,7 @@ the flash voltage), so it only suits a button: an OLED line there stops the boar
    Under **Music Box remote**, set:
    - **Network → WiFi SSID / password**: a 2.4 GHz network (the ESP32 has no 5 GHz radio)
    - **Network → Music Box URL**: `http://<your computer's IP>:8080`, with no trailing slash
-   - **Network → Device key**: must match `DEVICE_KEY` on the backend (default `musicbox-demo-key`)
+   - **Network → Device key**: must match `DEVICE_KEY` on the backend. It is empty by default: pick your own key and set it in both places
    - Pins, SPI speed, screen rotation and knob direction if your build differs
 
    The settings are saved to `sdkconfig`, which is git-ignored, so your WiFi password stays out of
@@ -149,8 +149,8 @@ Every request carries the shared key in the `X-Device-Key` header. You can try t
 curl:
 
 ```bash
-curl -H "X-Device-Key: musicbox-demo-key" http://localhost:8080/api/device/state
-curl -X POST -H "X-Device-Key: musicbox-demo-key" -H "Content-Type: application/json" \
+curl -H "X-Device-Key: YOUR_DEVICE_KEY" http://localhost:8080/api/device/state
+curl -X POST -H "X-Device-Key: YOUR_DEVICE_KEY" -H "Content-Type: application/json" \
      -d '{"command":"PLAY_PAUSE"}' http://localhost:8080/api/device/command
 ```
 
